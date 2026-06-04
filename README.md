@@ -4,10 +4,17 @@
   <img alt="Welcome to the Village Wellness App" src="./images/banner-light.png">
 </picture>
 
+---
+
+# - Frontend Repo - Under Construction -
+
 ## Navigation
 
 - [Overview of Project](#overview-of-project)
 - [The Village Wellness App](#the-village-wellness-app)
+- [React + Vite](#react--vite)
+- [React Compiler](#react-compiler)
+- [ESLint Configuration](#expanding-the-eslint-configuration)
 
 ## Overview of Project
 
