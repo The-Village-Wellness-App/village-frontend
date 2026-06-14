@@ -1,7 +1,7 @@
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="./images/banner-dark.png">
-  <source media="(prefers-color-scheme: light)" srcset="images/banner-light.png">
-  <img alt="Welcome to the Village Wellness App" src="./images/banner-light.png">
+  <source media="(prefers-color-scheme: dark)" srcset="./public/banner-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="./public/banner-light.png">
+  <img alt="Welcome to the Village Wellness App" src="./public/banner-light.png">
 </picture>
 
 ---
