@@ -5,16 +5,19 @@ export default function Footer() {
 
 	return(
 		<footer>
-			
+		  <h5>
 		  <a
 		    href="https://github.com/tim-maastricht"
-			target="_blank">WhiteHotThrash |
+			target="_blank">WhiteHotThrash 
 		  </a>
+		  <a>| </a>
 		  <a
 		    href="https://github.com/BeeGeeEss"
-			target="_blank"> ✨BeeGeeEss✨
+			target="_blank">✨BeeGeeEss✨
 		  </a>
 		  <a>| &copy; {currentYear}</a>
+		  </h5>
 		</footer>
+		
 	);
 };
