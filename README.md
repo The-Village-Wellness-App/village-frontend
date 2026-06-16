@@ -76,29 +76,29 @@ The frontend of The Village website is built using React, a JavaScript library f
 
 ### Purpose of Each Technology
 
-| Technology | Purpose |
-| --- | --- |
-| MongoDB | Stores the applications data |
-| Express.js | Handles API routing and middleware |
-| React | Builds and handles everything the users see and interact with |
-| Node.js | Runs the backend server environment |
-| Vite | |
-| Material UI | |
-| React Router | |
+| Technology   | Purpose                                                       |
+| ------------ | ------------------------------------------------------------- |
+| MongoDB      | Stores the applications data                                  |
+| Express.js   | Handles API routing and middleware                            |
+| React        | Builds and handles everything the users see and interact with |
+| Node.js      | Runs the backend server environment                           |
+| Vite         | Enables quick frontend builds                                 |
+| Material UI  | Implements Google styles and components                       |
+| React Router | Library providing routing capabilities                        |
 
 ### Industry Relevance
 
-The MERN stack is widely used in modern full-stack web development due to its scalability, security, performance and ability to use JavaScript across both frontend and backend development[*](#references).
+The MERN stack is widely used in modern full-stack web development due to its scalability, security, performance and ability to use JavaScript across both frontend and backend development[\*](#references).
 
 The technologies used in the MERN stack are some of the most widely used technologies in present time.
 
-See State of JavaScript graphs[*](#references):
+See State of JavaScript graphs[\*](#references):
 
 - [React Usage](https://share.devographics.com/share/prerendered?localeId=en-US&surveyId=state_of_js&editionId=js2025&blockId=front_end_frameworks_ratios&params=&sectionId=libraries&subSectionId=front_end_frameworks)
 - [Express Usage](https://share.devographics.com/share/prerendered?localeId=en-US&surveyId=state_of_js&editionId=js2025&blockId=back_end_frameworks_ratios&params=&sectionId=libraries&subSectionId=back_end_frameworks)
 - [Testing with Jest](https://share.devographics.com/share/prerendered?localeId=en-US&surveyId=state_of_js&editionId=js2025&blockId=testing_ratios&params=&sectionId=libraries&subSectionId=testing)
 
-See Stack Overflow graphs[*](#references):
+See Stack Overflow graphs[\*](#references):
 
 - [MongoDB (No-SQL Databases)](https://survey.stackoverflow.co/2025/technology#most-popular-technologies-database-database)
 - [Node, React, Express Usage](https://survey.stackoverflow.co/2025/technology#most-popular-technologies-webframe-webframe)
@@ -106,29 +106,29 @@ See Stack Overflow graphs[*](#references):
 
 ### Comparison to Alternative Technologies
 
-| Chosen Technology | Alternative | Reason Chosen |
-| --- | --- | --- |
-| MongoDB | PostgreSQL | Flexible, dynamic, durable, high-performance |
-| Express.js | Django | Minimalist, customisable, JavaScript-based |
-| React | Angular | Component flexibility, rapid development |
-| Node.js | ASP.NET | Universal JavaScript development environment |
-| Vite | x | X |
-| Material UI | x | X |
-| React Router | x | X |
+| Chosen Technology | Alternative        | Reason Chosen                                                               |
+| ----------------- | ------------------ | --------------------------------------------------------------------------- |
+| MongoDB           | PostgreSQL         | Flexible, dynamic, durable, high-performance                                |
+| Express.js        | Django             | Minimalist, customisable, JavaScript-based                                  |
+| React             | Angular            | Component flexibility, rapid development                                    |
+| Node.js           | ASP.NET            | Universal JavaScript development environment                                |
+| Vite              | Next.js            | Unopinionated, lightweight, provides full control                           |
+| Material UI       | Chakra UI          | More advanced, provides larger library, scalability                         |
+| React Router      | Next.js App Router | Not tied to server-side architecture, unopinionated, fullstack capabilities |
 
 ### Licensing Information
 
-| Technology | License |
-| --- | --- |
-| MongoDB | Server Side Public License (SSPL) |
-| Express.js | MIT License |
-| React | MIT License |
-| Node.js | MIT License |
-| Vite | MIT Licence |
-| Material UI | MIT Licence |
-| React Router | MIT Licence |
+| Technology   | License                           |
+| ------------ | --------------------------------- |
+| MongoDB      | Server Side Public License (SSPL) |
+| Express.js   | MIT License                       |
+| React        | MIT License                       |
+| Node.js      | MIT License                       |
+| Vite         | MIT Licence                       |
+| Material UI  | MIT Licence                       |
+| React Router | MIT Licence                       |
 
-*Note: Though MongoDB uses an SSPL licence, it is still appropriate to licence this project under MIT, because the application:
+\*Note: Though MongoDB uses an SSPL licence, it is still appropriate to licence this project under MIT, because the application:
 
 1. Is a public educational project
 2. Uses MongoDB as an external database, and connects through Mongoose
@@ -174,9 +174,13 @@ This project follows a brand guide for all CSS styling - please see our [Brand G
 ```js
 "@emotion/react": "^11.14.0",
 "@emotion/styled": "^11.14.1",
+"@fontsource/roboto": "^5.2.10",
+"@fontsource/roboto-condensed": "^5.2.8",
+"@mui/icons-material": "^9.1.1",
 "@mui/material": "^9.1.1",
 "react": "^19.2.5",
-"react-dom": "^19.2.5"
+"react-dom": "^19.2.5",
+"react-router-dom": "^7.17.0"
 
 devDependencies
 
@@ -203,6 +207,7 @@ devDependencies
 ```bash
 📁 village-frontend
     📁 public
+        ─ icons.svg
     📁 src
         📁 assets
             ─ react.svg
@@ -210,10 +215,25 @@ devDependencies
         📁 components
             ─ Footer.jsx
             ─ Header.jsx
+            ─ Header.module.css
+            ─ Navbar.jsx
+        📁 layouts
+            ─ main-layout.jsx
+            ─ register-login-layout.jsx
+        📁 pages
+            ─ dashboard-page.jsx
+            ─ event-page.jsx
+            ─ graph-report-page.jsx
+            ─ home-page.jsx
+            ─ login-page.jsx
+            ─ mood-page.jsx
+            ─ pain-page.jsx
         ─ App.css
         ─ App.jsx
+        ─ fonts.css
         ─ index.css
         ─ main.jsx
+        ─ theme.js
     ─ eslint.config.js
     ─ index.html
     ─ LICENSE
@@ -245,13 +265,13 @@ npm run build   # or `npm run dev` for hot-reloading
 ## Running the Server
 
 Run the production server by entering into the terminal
-```npm run start```
+`npm run start`
 
 Preview Production Build
-```npm run preview```
+`npm run preview`
 
 Or if you want hot-reloading, run dev mode
-```npm run dev```
+`npm run dev`
 
 The app will run at: [http://localhost:5173](http://localhost:5173)
 
@@ -259,12 +279,12 @@ The app will run at: [http://localhost:5173](http://localhost:5173)
 
 The following scripts can be used for this project:
 
-| Script | Description |
-| --- | --- |
-| `dev` | Starts the development server with automatic reloads |
-| `build` | Builds the production server |
-| `lint` | Checks code for style breaches or errors |
-| `preview` | Preview the build |
+| Script    | Description                                          |
+| --------- | ---------------------------------------------------- |
+| `dev`     | Starts the development server with automatic reloads |
+| `build`   | Builds the production server                         |
+| `lint`    | Checks code for style breaches or errors             |
+| `preview` | Preview the build                                    |
 
 ## Deployment
 
@@ -294,11 +314,11 @@ This project uses third-party technologies including MongoDB, which is licensed 
 
 ## References
 
-> [MongoDB. (2026). *MERN Stack Explained*. Retrieved May 24, 2026, from https://www.mongodb.com/resources/languages/mern-stack](#tech-stack)
+> [MongoDB. (2026). _MERN Stack Explained_. Retrieved May 24, 2026, from https://www.mongodb.com/resources/languages/mern-stack](#tech-stack)
 
-> [State of JavaScript. (2025). *State of JavaScript 2025: Libraries*. Retrieved May 24, 2026, from https://2025.stateofjs.com/en-US/libraries/](#tech-stack)
+> [State of JavaScript. (2025). _State of JavaScript 2025: Libraries_. Retrieved May 24, 2026, from https://2025.stateofjs.com/en-US/libraries/](#tech-stack)
 
-> [Stack Overflow. (2025). *2025 Developer Survey*. Retrieved May 24, 2026, from https://survey.stackoverflow.co/2025/](#tech-stack)
+> [Stack Overflow. (2025). _2025 Developer Survey_. Retrieved May 24, 2026, from https://survey.stackoverflow.co/2025/](#tech-stack)
 
 ## Authors
 
