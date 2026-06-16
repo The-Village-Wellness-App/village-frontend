@@ -11,13 +11,24 @@ import {
 } from "@mui/material";
 
 import MenuIcon from "@mui/icons-material/Menu";
+import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 
 export default function Navbar() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
   const [open, setOpen] = useState(false);
+
+  const navItems = [
+    { label: "Home", path: "/" },
+    { label: "Dashboard", path: "/dashboard" },
+    { label: "Mood", path: "/mood" },
+    { label: "Pain", path: "/pain" },
+    { label: "Events", path: "/event" },
+    { label: "Graphs & Reports", path: "/graphs" },
+  ];
 
   if (isMobile) {
     return (
@@ -29,7 +40,15 @@ export default function Navbar() {
           }}
         >
           <Toolbar>
-            <Typography sx={{ flexGrow: 1, color: "#7ED957" }}>
+            <Typography
+              sx={{
+                flexGrow: 1,
+                color: "#7ED957",
+                fontFamily: '"Roboto", sans-serif',
+                fontWeight: 500,
+                alignItems: "left",
+              }}
+            >
               WELCOME!
             </Typography>
 
@@ -45,71 +64,31 @@ export default function Navbar() {
               width: 250,
               display: "flex",
               flexDirection: "column",
-              padding: 2,
+              p: 2,
               gap: 2,
               backgroundColor: "#8C52FF",
+              height: "100%",
             }}
           >
-            <Button
-              onClick={() => setOpen(false)}
-              sx={{
-                color: "#7ED957",
-                fontFamily: '"Roboto", sans-serif',
-                fontWeight: 500,
-              }}
-            >
-              Home
-            </Button>
-            <Button
-              onClick={() => setOpen(false)}
-              sx={{
-                color: "#7ED957",
-                fontFamily: '"Roboto", sans-serif',
-                fontWeight: 500,
-              }}
-            >
-              Dashboard
-            </Button>
-            <Button
-              onClick={() => setOpen(false)}
-              sx={{
-                color: "#7ED957",
-                fontFamily: '"Roboto", sans-serif',
-                fontWeight: 500,
-              }}
-            >
-              Mood
-            </Button>
-            <Button
-              onClick={() => setOpen(false)}
-              sx={{
-                color: "#7ED957",
-                fontFamily: '"Roboto", sans-serif',
-                fontWeight: 500,
-              }}
-            >
-              Pain
-            </Button>
-            <Button
-              onClick={() => setOpen(false)}
-              sx={{
-                color: "#7ED957",
-                fontFamily: '"Roboto", sans-serif',
-                fontWeight: 500,
-              }}
-            >
-              Events
-            </Button>
-            <Button
-              onClick={() => setOpen(false)}
-              sx={{
-                color: "#7ED957",
-                fontFamily: '"Roboto", sans-serif',
-                fontWeight: 500,
-              }}
-            >
-              Graphs & Reports
-            </Button>
+            {navItems.map((item) => (
+              <Button
+                key={item.path}
+                component={Link}
+                to={item.path}
+                onClick={() => setOpen(false)}
+                sx={{
+                  color: "#7ED957",
+                  fontFamily: '"Roboto", sans-serif',
+                  fontWeight: 500,
+                  justifyContent: "flex-start",
+                }}
+              >
+                {item.label}
+              </Button>
+            ))}
+            <IconButton component={Link} to="/login" sx={{ color: "#7ED957" }}>
+              <AccountCircleIcon />
+            </IconButton>
           </Box>
         </Drawer>
       </>
@@ -128,7 +107,6 @@ export default function Navbar() {
           sx={{
             flexGrow: 1,
             color: "#7ED957",
-            textAlign: "left",
             fontFamily: '"Roboto", sans-serif',
             fontWeight: 500,
           }}
@@ -136,60 +114,23 @@ export default function Navbar() {
           WELCOME!
         </Typography>
 
-        <Button
-          sx={{
-            color: "#7ED957",
-            fontFamily: '"Roboto", sans-serif',
-            fontWeight: 500,
-          }}
-        >
-          Home
-        </Button>
-        <Button
-          sx={{
-            color: "#7ED957",
-            fontFamily: '"Roboto", sans-serif',
-            fontWeight: 500,
-          }}
-        >
-          Dashboard
-        </Button>
-        <Button
-          sx={{
-            color: "#7ED957",
-            fontFamily: '"Roboto", sans-serif',
-            fontWeight: 500,
-          }}
-        >
-          Mood
-        </Button>
-        <Button
-          sx={{
-            color: "#7ED957",
-            fontFamily: '"Roboto", sans-serif',
-            fontWeight: 500,
-          }}
-        >
-          Pain
-        </Button>
-        <Button
-          sx={{
-            color: "#7ED957",
-            fontFamily: '"Roboto", sans-serif',
-            fontWeight: 500,
-          }}
-        >
-          Events
-        </Button>
-        <Button
-          sx={{
-            color: "#7ED957",
-            fontFamily: '"Roboto", sans-serif',
-            fontWeight: 500,
-          }}
-        >
-          Graphs & Reports
-        </Button>
+        {navItems.map((item) => (
+          <Button
+            key={item.path}
+            component={Link}
+            to={item.path}
+            sx={{
+              color: "#7ED957",
+              fontFamily: '"Roboto", sans-serif',
+              fontWeight: 500,
+            }}
+          >
+            {item.label}
+          </Button>
+        ))}
+        <IconButton component={Link} to="/login" sx={{ color: "#7ED957" }}>
+          <AccountCircleIcon />
+        </IconButton>
       </Toolbar>
     </AppBar>
   );
