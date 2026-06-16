@@ -49,11 +49,18 @@ The application also allows users to add event markers to their timeline, such a
 
 # Overview of Frontend Application
 
-Placeholder
+The frontend of The Village website is built using React, a JavaScript library for creating interactive user interfaces. The application provides users with a responsive and user-friendly platform to access wellness-related tracking, manage their accounts, and report their current mood/pain levels with other health and wellbeing services.
 
 # Project Features
 
-Placeholder
+- Create and manage accounts
+- Log in securely
+- Access personalised wellness tracking
+- Access personalised journalling
+- Graph mood/pain levels
+- View and update profile information
+- Navigate through different sections of the website
+- Choose theme
 
 ## Tech Stack
 
@@ -63,6 +70,9 @@ Placeholder
 - Express.js
 - React
 - Node.js
+- Vite
+- Material UI
+- React Router
 
 ### Purpose of Each Technology
 
@@ -72,6 +82,9 @@ Placeholder
 | Express.js | Handles API routing and middleware |
 | React | Builds and handles everything the users see and interact with |
 | Node.js | Runs the backend server environment |
+| Vite | |
+| Material UI | |
+| React Router | |
 
 ### Industry Relevance
 
@@ -99,6 +112,9 @@ See Stack Overflow graphs[*](#references):
 | Express.js | Django | Minimalist, customisable, JavaScript-based |
 | React | Angular | Component flexibility, rapid development |
 | Node.js | ASP.NET | Universal JavaScript development environment |
+| Vite | x | X |
+| Material UI | x | X |
+| React Router | x | X |
 
 ### Licensing Information
 
@@ -108,6 +124,9 @@ See Stack Overflow graphs[*](#references):
 | Express.js | MIT License |
 | React | MIT License |
 | Node.js | MIT License |
+| Vite | MIT Licence |
+| Material UI | MIT Licence |
+| React Router | MIT Licence |
 
 *Note: Though MongoDB uses an SSPL licence, it is still appropriate to licence this project under MIT, because the application:
 
@@ -133,6 +152,7 @@ The React Compiler is not enabled on this template because of its impact on dev 
 This project uses **ESLint** with the `eslint:recommended` configuration to enforce consistent code style. ESLint is configured for Node.js environments and Jest testing.
 
 To check code style:
+
 ```bash
 npm run lint
 ```
@@ -180,7 +200,7 @@ devDependencies
 
 ## Project Structure
 
-```
+```bash
 📁 village-frontend
     📁 public
     📁 src
