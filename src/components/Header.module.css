@@ -1,0 +1,13 @@
+.header {
+  display: flex;
+  align-items: center;
+  padding: 1rem 2rem;
+  background-color: white;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.logo {
+  height: 60px;
+  width: auto;
+  margin-right: 1rem;
+}
