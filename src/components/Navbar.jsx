@@ -13,7 +13,7 @@ import {
 import MenuIcon from "@mui/icons-material/Menu";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 
 export default function Navbar() {
   const theme = useTheme();
@@ -73,20 +73,49 @@ export default function Navbar() {
             {navItems.map((item) => (
               <Button
                 key={item.path}
-                component={Link}
+                component={NavLink}
                 to={item.path}
+                end={item.path === "/"}
                 onClick={() => setOpen(false)}
                 sx={{
                   color: "#7ED957",
                   fontFamily: '"Roboto", sans-serif',
                   fontWeight: 500,
                   justifyContent: "flex-start",
+                  borderRadius: 1,
+
+                  "&.active": {
+                    backgroundColor: "#7ED957",
+                    color: "#8C52FF",
+
+                    "&:hover": {
+                      backgroundColor: "#7ED957",
+                    },
+                  },
                 }}
               >
                 {item.label}
               </Button>
             ))}
-            <IconButton component={Link} to="/login" sx={{ color: "#7ED957" }}>
+
+            <IconButton
+              component={NavLink}
+              to="/login"
+              onClick={() => setOpen(false)}
+              sx={{
+                alignSelf: "flex-start",
+                color: "#7ED957",
+
+                "&.active": {
+                  backgroundColor: "#7ED957",
+                  color: "#8C52FF",
+
+                  "&:hover": {
+                    backgroundColor: "#7ED957",
+                  },
+                },
+              }}
+            >
               <AccountCircleIcon />
             </IconButton>
           </Box>
@@ -117,18 +146,41 @@ export default function Navbar() {
         {navItems.map((item) => (
           <Button
             key={item.path}
-            component={Link}
+            component={NavLink}
             to={item.path}
+            end={item.path === "/"}
             sx={{
               color: "#7ED957",
               fontFamily: '"Roboto", sans-serif',
               fontWeight: 500,
+              borderRadius: 1,
+              px: 2,
+
+              "&.active": {
+                backgroundColor: "#7ED957",
+                color: "#8C52FF",
+
+                "&:hover": {
+                  backgroundColor: "#7ED957",
+                },
+              },
             }}
           >
             {item.label}
           </Button>
         ))}
-        <IconButton component={Link} to="/login" sx={{ color: "#7ED957" }}>
+        <IconButton
+          component={NavLink}
+          to="/login"
+          sx={{
+            color: "#7ED957",
+
+            "&.active": {
+              backgroundColor: "#7ED957",
+              color: "#8C52FF",
+            },
+          }}
+        >
           <AccountCircleIcon />
         </IconButton>
       </Toolbar>
