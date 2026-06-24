@@ -82,6 +82,7 @@ function Pain() {
   ];
 
   useEffect(() => {
+    // grab the current pain list when the page opens
     loadPains();
   }, []);
 
@@ -116,6 +117,8 @@ function Pain() {
     e.preventDefault();
     setSubmitError(null);
 
+    // keep the form simple and make sure the value is in range
+
     const parsedValue = Number(formData.value);
 
     if (formData.value === '' || Number.isNaN(parsedValue)) {
@@ -142,6 +145,7 @@ function Pain() {
         occurred_at: formData.occurred_at.toISOString(),
       });
 
+      // put the newest pain entry at the top so it feels live
       setPains((prev) => [response?.data || response, ...prev]);
       setFormData({
         value: 0,
@@ -223,6 +227,7 @@ function Pain() {
         occurred_at: editFormData.occurred_at.toISOString(),
       });
 
+      // swap in the updated entry without reloading the whole page
       setPains((prev) => prev.map((pain) => (pain._id === editingId ? response?.data || response : pain)));
       handleEditCancel();
     } catch (err) {
@@ -241,6 +246,7 @@ function Pain() {
     try {
       setIsDeleting(true);
       await deletePain(painToDelete._id);
+      // remove it from the list right away after the delete goes through
       setPains((prev) => prev.filter((pain) => pain._id !== painToDelete._id));
       setDeleteConfirmOpen(false);
       setPainToDelete(null);
