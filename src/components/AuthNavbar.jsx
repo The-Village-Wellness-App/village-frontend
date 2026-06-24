@@ -2,10 +2,10 @@ import {
   AppBar,
   Toolbar,
   Typography,
-  Button,
   IconButton,
   Drawer,
   Box,
+  Button,
   useMediaQuery,
   useTheme,
 } from "@mui/material";
@@ -15,20 +15,11 @@ import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
 
-export default function Navbar() {
+export default function AuthNavbar() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
   const [open, setOpen] = useState(false);
-
-  const navItems = [
-    { label: "Home", path: "/" },
-    { label: "Dashboard", path: "/dashboard" },
-    { label: "Mood", path: "/mood" },
-    { label: "Pain", path: "/pain" },
-    { label: "Events", path: "/event" },
-    { label: "Graphs & Reports", path: "/graphs" },
-  ];
 
   if (isMobile) {
     return (
@@ -46,7 +37,6 @@ export default function Navbar() {
                 color: "#7ED957",
                 fontFamily: '"Roboto", sans-serif',
                 fontWeight: 500,
-                alignItems: "left",
               }}
             >
               WELCOME!
@@ -70,33 +60,29 @@ export default function Navbar() {
               height: "100%",
             }}
           >
-            {navItems.map((item) => (
-              <Button
-                key={item.path}
-                component={NavLink}
-                to={item.path}
-                end={item.path === "/"}
-                onClick={() => setOpen(false)}
-                sx={{
-                  color: "#7ED957",
-                  fontFamily: '"Roboto", sans-serif',
-                  fontWeight: 500,
-                  justifyContent: "flex-start",
-                  borderRadius: 1,
+            <Button
+              component={NavLink}
+              to="/login"
+              onClick={() => setOpen(false)}
+              sx={{
+                color: "#7ED957",
+                fontFamily: '"Roboto", sans-serif',
+                fontWeight: 500,
+                justifyContent: "flex-start",
+                borderRadius: 1,
 
-                  "&.active": {
+                "&.active": {
+                  backgroundColor: "#7ED957",
+                  color: "#8C52FF",
+
+                  "&:hover": {
                     backgroundColor: "#7ED957",
-                    color: "#8C52FF",
-
-                    "&:hover": {
-                      backgroundColor: "#7ED957",
-                    },
                   },
-                }}
-              >
-                {item.label}
-              </Button>
-            ))}
+                },
+              }}
+            >
+              Login
+            </Button>
 
             <IconButton
               component={NavLink}
@@ -143,32 +129,6 @@ export default function Navbar() {
           WELCOME!
         </Typography>
 
-        {navItems.map((item) => (
-          <Button
-            key={item.path}
-            component={NavLink}
-            to={item.path}
-            end={item.path === "/"}
-            sx={{
-              color: "#7ED957",
-              fontFamily: '"Roboto", sans-serif',
-              fontWeight: 500,
-              borderRadius: 1,
-              px: 2,
-
-              "&.active": {
-                backgroundColor: "#7ED957",
-                color: "#8C52FF",
-
-                "&:hover": {
-                  backgroundColor: "#7ED957",
-                },
-              },
-            }}
-          >
-            {item.label}
-          </Button>
-        ))}
         <IconButton
           component={NavLink}
           to="/login"
