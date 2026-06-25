@@ -26,6 +26,34 @@ export const fetchData = async (endpoint, options = {}) => {
   return null;
 };
 
+export const loginUser = async (credentials) => {
+  return fetchData('/users/login', {
+    method: 'POST',
+    body: JSON.stringify(credentials),
+  });
+};
+
+export const registerUser = async (userData) => {
+  return fetchData('/users/signup', {
+    method: 'POST',
+    body: JSON.stringify(userData),
+  });
+};
+
+export const forgotPassword = async (email) => {
+  return fetchData('/users/forgot-password', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  });
+};
+
+export const resetPassword = async ({ token, password }) => {
+  return fetchData('/users/reset-password', {
+    method: 'POST',
+    body: JSON.stringify({ token, password }),
+  });
+};
+
 export const createEvent = async (eventData) => {
   return fetchData('/events', {
     method: 'POST',
