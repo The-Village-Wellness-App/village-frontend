@@ -38,7 +38,6 @@ function Mood() {
 
   const [formData, setFormData] = useState({
     value: 0,
-    emotion: "happy",
     optional_text: "",
     occurred_at: dayjs(),
   });
@@ -46,7 +45,6 @@ function Mood() {
   const [editingId, setEditingId] = useState(null);
   const [editFormData, setEditFormData] = useState({
     value: 0,
-    emotion: "happy",
     optional_text: "",
     occurred_at: dayjs(),
   });
@@ -55,11 +53,6 @@ function Mood() {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [moodToDelete, setMoodToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
-
-  useEffect(() => {
-    // grab the current mood list when the page opens
-    loadMoods();
-  }, []);
 
   const loadMoods = async () => {
     try {
@@ -72,6 +65,11 @@ function Mood() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    // grab the current mood list when the page opens
+    loadMoods();
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;

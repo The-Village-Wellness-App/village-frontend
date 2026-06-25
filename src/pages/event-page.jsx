@@ -68,10 +68,6 @@ function Event() {
 
   const VALID_CATEGORIES = ['medication', 'therapy', 'life_event', 'appointment', 'other'];
 
-  useEffect(() => {
-    loadEvents();
-  }, []);
-
   const loadEvents = async () => {
     try {
       setLoading(true);
@@ -83,6 +79,10 @@ function Event() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadEvents();
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
