@@ -37,7 +37,6 @@ import Login from "./pages/login-page";
 import Mood from "./pages/mood-page";
 import Pain from "./pages/pain-page";
 import Event from "./pages/event-page";
-import Dashboard from "./pages/dashboard-page";
 import Graphs from "./pages/graph-report-page";
 
 function App() {
@@ -51,7 +50,6 @@ function App() {
       {/* Main Application Routes */}
       <Route element={<MainLayout />}>
         <Route path="/" element={<Home />} />
-        <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/mood" element={<Mood />} />
         <Route path="/pain" element={<Pain />} />
         <Route path="/event" element={<Event />} />

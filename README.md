@@ -296,7 +296,13 @@ Link: []()
 
 ## App Preview
 
-Placeholder
+The Village Wellness App welcomes users to each page. Both the full navbar, and the burger navbar feature a green highlight to let users know what page they're on. The user features can be found via the person icon.
+
+![Navbar](./src/assets/header-nav.png)
+
+The main three pages 'Mood', 'Pain', 'Events' allow users to log meaningful events, feelings or experiences - with a journal section to provide extra context. I.e. pain today was a rating of 5 out of ten, the pain was located in/on the users head.
+
+![Pain Page](./src/assets/pain-log.png)
 
 ## App Functionality
 
@@ -304,7 +310,13 @@ Placeholder
 
 # Responsive Design & Accessibility
 
-Placeholder
+The Village Wellness App features a full navbar on larger devices, and a burger menu on smaller devices.
+
+![Full Navbar - Larger Devices](./src/assets/header-nav.png)
+
+![Condensed Navbar - Smaller devices](./src/assets/burger-menu.png)
+
+![Condensed Navbar Menu - Smaller Devices](./src/assets/burger-menu-2.png)
 
 ## License
 
