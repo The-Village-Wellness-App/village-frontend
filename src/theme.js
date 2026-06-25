@@ -5,29 +5,30 @@ const headingStyle = {
   fontWeight: 500,
 };
 
-const theme = createTheme({
-  palette: {
-    primary: {
-      main: "#8C52FF",
+export default function createAppTheme(mode = "light") {
+  return createTheme({
+    palette: {
+      mode,
+      primary: {
+        main: "#8C52FF",
+      },
+      secondary: {
+        main: "#7ED957",
+      },
+      background: {
+        default: mode === "dark" ? "#121212" : "#F2FFE2",
+        paper: mode === "dark" ? "#1e1e1e" : "#fff",
+      },
     },
-    secondary: {
-      main: "#7ED957",
+    typography: {
+      fontFamily: '"Roboto Condensed", sans-serif',
+
+      h1: headingStyle,
+      h2: headingStyle,
+      h3: headingStyle,
+      h4: headingStyle,
+      h5: headingStyle,
+      h6: headingStyle,
     },
-    background: {
-      default: "#F2FFE2",
-    },
-  },
-
-  typography: {
-    fontFamily: '"Roboto Condensed", sans-serif',
-
-    h1: headingStyle,
-    h2: headingStyle,
-    h3: headingStyle,
-    h4: headingStyle,
-    h5: headingStyle,
-    h6: headingStyle,
-  },
-});
-
-export default theme;
+  });
+}
