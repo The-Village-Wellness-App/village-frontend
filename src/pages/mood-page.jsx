@@ -29,13 +29,6 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { fetchData, createMood, updateMood, deleteMood } from "../services/api";
 
-const formatEmotion = (emotion) => {
-  return emotion
-    .split("_")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
-};
-
 function Mood() {
   const [Moods, setMoods] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -59,27 +52,9 @@ function Mood() {
   });
   const [isEditSubmitting, setIsEditSubmitting] = useState(false);
   const [editError, setEditError] = useState(null);
-
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [moodToDelete, setMoodToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
-
-  const VALID_EMOTIONS = [
-    "excited",
-    "happy",
-    "sad",
-    "overwhelmed",
-    "grateful",
-    "angry",
-    "anxious",
-    "content",
-    "irritated",
-    "perplexed",
-    "low mood",
-    "high energy",
-    "relieved",
-    "joyous",
-  ];
 
   useEffect(() => {
     // grab the current mood list when the page opens
@@ -131,16 +106,10 @@ function Mood() {
       return;
     }
 
-    if (!VALID_EMOTIONS.includes(formData.emotion)) {
-      setSubmitError("Invalid emotion selected");
-      return;
-    }
-
     try {
       setIsSubmitting(true);
       const response = await createMood({
         value: parsedValue,
-        emotion: formData.emotion,
         optional_text: formData.optional_text.trim() || "",
         occurred_at: formData.occurred_at.toISOString(),
       });
@@ -149,7 +118,6 @@ function Mood() {
       setMoods((prev) => [response?.data || response, ...prev]);
       setFormData({
         value: 0,
-        emotion: "happy",
         optional_text: "",
         occurred_at: dayjs(),
       });
@@ -164,7 +132,6 @@ function Mood() {
     setEditingId(mood._id);
     setEditFormData({
       value: Number(mood.value ?? 0),
-      emotion: mood.emotion,
       optional_text: mood.optional_text || "",
       occurred_at: dayjs(mood.occurred_at),
     });
@@ -175,7 +142,6 @@ function Mood() {
     setEditingId(null);
     setEditFormData({
       value: 0,
-      emotion: "happy",
       optional_text: "",
       occurred_at: dayjs(),
     });
@@ -213,16 +179,10 @@ function Mood() {
       return;
     }
 
-    if (!VALID_EMOTIONS.includes(editFormData.emotion)) {
-      setEditError("Invalid emotion selected");
-      return;
-    }
-
     try {
       setIsEditSubmitting(true);
       const response = await updateMood(editingId, {
         value: parsedValue,
-        emotion: editFormData.emotion,
         optional_text: editFormData.optional_text.trim() || "",
         occurred_at: editFormData.occurred_at.toISOString(),
       });
@@ -334,24 +294,6 @@ function Mood() {
                 />
               </Box>
 
-              <FormControl fullWidth>
-                <InputLabel id="mood-emotion-label">Emotion</InputLabel>
-                <Select
-                  labelId="mood-emotion-label"
-                  id="emotion"
-                  name="emotion"
-                  value={formData.emotion}
-                  onChange={handleInputChange}
-                  label="Emotion"
-                >
-                  {VALID_EMOTIONS.map((emotion) => (
-                    <MenuItem key={emotion} value={emotion}>
-                      {formatEmotion(emotion)}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-
               <TextField
                 fullWidth
                 id="optional_text"
@@ -416,13 +358,6 @@ function Mood() {
                     <Box sx={{ flex: 1 }}>
                       <Typography variant="h6" component="h3" gutterBottom>
                         mood Level: {mood.value}/10
-                      </Typography>
-                      <Typography
-                        variant="body2"
-                        color="textSecondary"
-                        gutterBottom
-                      >
-                        <strong>Emotion:</strong> {formatEmotion(mood.emotion)}
                       </Typography>
                       <Typography
                         variant="body2"
@@ -497,24 +432,6 @@ function Mood() {
                 max={10}
               />
             </Box>
-
-            <FormControl fullWidth>
-              <InputLabel id="edit-mood-emotion-label">Emotion</InputLabel>
-              <Select
-                labelId="edit-mood-emotion-label"
-                id="edit-emotion"
-                name="emotion"
-                value={editFormData.emotion}
-                onChange={handleEditChange}
-                label="Emotion"
-              >
-                {VALID_EMOTIONS.map((emotion) => (
-                  <MenuItem key={emotion} value={emotion}>
-                    {formatEmotion(emotion)}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
 
             <TextField
               fullWidth
