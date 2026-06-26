@@ -10,6 +10,21 @@ import {
   Stack,
 } from "@mui/material";
 
+import { LineChart } from "@mui/x-charts/LineChart";
+
+{
+  /* Dummy Data - Placeholder */
+}
+const graphData = [
+  { day: "Mon", mood: 4, pain: 2 },
+  { day: "Tue", mood: 3, pain: 4 },
+  { day: "Wed", mood: 5, pain: 1 },
+  { day: "Thu", mood: 4, pain: 2 },
+  { day: "Fri", mood: 2, pain: 5 },
+  { day: "Sat", mood: 3, pain: 3 },
+  { day: "Sun", mood: 4, pain: 2 },
+];
+
 export default function GraphPage() {
   return (
     <Box sx={{ p: 4 }}>
@@ -98,6 +113,8 @@ export default function GraphPage() {
           >
             <Typography variant="h5">Graphs & Reports</Typography>
 
+            {/* Placeholder for graphs/reports */}
+
             <Box
               sx={{
                 mt: 3,
@@ -108,7 +125,27 @@ export default function GraphPage() {
                 alignItems: "center",
               }}
             >
-              Graph goes here
+              <LineChart
+                height={350}
+                xAxis={[
+                  {
+                    scaleType: "point",
+                    data: graphData.map((item) => item.day),
+                  },
+                ]}
+                series={[
+                  {
+                    label: "Mood",
+                    data: graphData.map((item) => item.mood),
+                    color: "#8C52FF",
+                  },
+                  {
+                    label: "Pain",
+                    data: graphData.map((item) => item.pain),
+                    color: "#7ED957",
+                  },
+                ]}
+              />
             </Box>
           </Paper>
         </Grid>

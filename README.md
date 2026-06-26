@@ -21,15 +21,13 @@
 - [Packages](#packages)
 - [System Requirements](#system-requirements)
 - [Project Structure](#project-structure)
-- [Error Handling](#error-handling)
 - [Testing](#testing)
 - [Installation](#installation)
 - [Running the Server](#running-the-server)
 - [Scripts](#scripts)
 - [Deployment](#deployment)
 - [App Preview](#app-preview)
-- [App Functionality](#app-functionality)
-- [Design & Accessibility](#responsive-design--accessibility)
+- [Design](#responsive-design)
 - [Licence](#license)
 - [References](#references)
 - [Authors](#authors)
@@ -243,13 +241,15 @@ devDependencies
     ─ vite.config.js
 ```
 
-## Error Handling
-
-Placeholder
-
 ## Testing
 
-Placeholder
+Vitest is used to create a test suite that validates:
+
+- The API
+- Web pages
+- The application file
+- Navbar & Footer
+- Theme tooling
 
 ## Installation
 
@@ -279,22 +279,32 @@ The app will run at: [http://localhost:5173](http://localhost:5173)
 
 The following scripts can be used for this project:
 
-| Script    | Description                                          |
-| --------- | ---------------------------------------------------- |
-| `dev`     | Starts the development server with automatic reloads |
-| `build`   | Builds the production server                         |
-| `lint`    | Checks code for style breaches or errors             |
-| `preview` | Preview the build                                    |
+| Script  | Description                                          |
+| ------- | ---------------------------------------------------- |
+| `dev`   | Starts the development server with automatic reloads |
+| `build` | Builds the production server                         |
+| `lint`  | Checks code for style breaches or errors             |
+| `test`  | Run the Vitest test suite                            |
 
 ## Deployment
 
 This project is deployed on Netlify.
 
-Build command: npm run build  
+Build command: npm run build
+
 Publish directory: dist
-Link: []()
+
+Link: [The village Wellness App - LIVE](https://the-village-wellness-app.netlify.app/)
 
 ## App Preview
+
+Users register for, or sign into, their account.
+
+![Login/Register Page](./src/assets/sign-in.png)
+
+The home page provides a brief overview.
+
+![Home Page](./src/assets/home-page.png)
 
 The Village Wellness App welcomes users to each page. Both the full navbar, and the burger navbar feature a green highlight to let users know what page they're on. The user features can be found via the person icon.
 
@@ -304,11 +314,7 @@ The main three pages 'Mood', 'Pain', 'Events' allow users to log meaningful even
 
 ![Pain Page](./src/assets/pain-log.png)
 
-## App Functionality
-
-Placeholder
-
-# Responsive Design & Accessibility
+# Responsive Design
 
 The Village Wellness App features a full navbar on larger devices, and a burger menu on smaller devices.
 
