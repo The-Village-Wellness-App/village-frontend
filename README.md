@@ -83,6 +83,7 @@ The frontend of The Village website is built using React, a JavaScript library f
 | Vite         | Enables quick frontend builds                                 |
 | Material UI  | Implements Google styles and components                       |
 | React Router | Library providing routing capabilities                        |
+| Dayjs        | Lightweight library for validation dates and times            |
 
 ### Industry Relevance
 
@@ -113,6 +114,7 @@ See Stack Overflow graphs[\*](#references):
 | Vite              | Next.js            | Unopinionated, lightweight, provides full control                           |
 | Material UI       | Chakra UI          | More advanced, provides larger library, scalability                         |
 | React Router      | Next.js App Router | Not tied to server-side architecture, unopinionated, fullstack capabilities |
+| Dayjs             | Luxon              | Superior timeOne handling, but heavy, complex logic                         |
 
 ### Licensing Information
 
@@ -125,6 +127,7 @@ See Stack Overflow graphs[\*](#references):
 | Vite         | MIT Licence                       |
 | Material UI  | MIT Licence                       |
 | React Router | MIT Licence                       |
+| Dayjs        | MIT Licence                       |
 
 \*Note: Though MongoDB uses an SSPL licence, it is still appropriate to licence this project under MIT, because the application:
 
@@ -176,6 +179,9 @@ This project follows a brand guide for all CSS styling - please see our [Brand G
 "@fontsource/roboto-condensed": "^5.2.8",
 "@mui/icons-material": "^9.1.1",
 "@mui/material": "^9.1.1",
+"@mui/x-charts": "^9.7.0",
+"@mui/x-date-pickers": "^9.6.0",
+"dayjs": "^1.11.21",
 "react": "^19.2.5",
 "react-dom": "^19.2.5",
 "react-router-dom": "^7.17.0"
@@ -183,14 +189,20 @@ This project follows a brand guide for all CSS styling - please see our [Brand G
 devDependencies
 
 "@eslint/js": "^10.0.1",
-"types/react": "^19.2.14",
+"@testing-library/jest-dom": "^6.9.1",
+"@testing-library/react": "^16.3.2",
+"@testing-library/user-event": "^14.6.1",
+"@types/react": "^19.2.14",
 "@types/react-dom": "^19.2.3",
 "@vitejs/plugin-react": "^6.0.1",
 "eslint": "^10.2.1",
 "eslint-plugin-react-hooks": "^7.1.1",
 "eslint-plugin-react-refresh": "^0.5.2",
 "globals": "^17.5.0",
-"vite": "^8.0.10"
+"jsdom": "^29.1.1",
+"react-transition-group": "^4.4.2",
+"vite": "^8.0.10",
+"vitest": "^4.1.9"
 ```
 
 ## System Requirements
@@ -205,27 +217,49 @@ devDependencies
 ```bash
 📁 village-frontend
     📁 public
+        ─ _redirects
         ─ icons.svg
     📁 src
+        📁 __tests__
+            ─ api.test.js
+            ─ App.test.jsx
+            ─ event-page.test.jsx
+            ─ Footer.test.jsx
+            ─ home-page.test.jsx
+            ─ login-page.test.jsx
+            ─ LoginForm.test.jsx
+            ─ mood-page.test.jsx
+            ─ Navbar.test.jsx
+            ─ pain-page.test.jsx
+            ─ ThemeContext.test.jsx
         📁 assets
             ─ react.svg
             ─ vite.svg
         📁 components
+            ─ AuthNavbar.jsx
             ─ Footer.jsx
+            ─ ForgotPasswordForm.jsx
             ─ Header.jsx
             ─ Header.module.css
+            ─ LoginForm.jsx
             ─ Navbar.jsx
+            ─ RegisterForm.jsx
+        📁 contexts
+            ─ ThemeContext.jsx
         📁 layouts
+            ─ auth-layout.jsx
             ─ main-layout.jsx
-            ─ register-login-layout.jsx
         📁 pages
-            ─ dashboard-page.jsx
             ─ event-page.jsx
             ─ graph-report-page.jsx
             ─ home-page.jsx
             ─ login-page.jsx
             ─ mood-page.jsx
             ─ pain-page.jsx
+        📁 services
+            ─ api.js
+        📁 test
+            ─ setup.js
         ─ App.css
         ─ App.jsx
         ─ fonts.css
@@ -239,6 +273,7 @@ devDependencies
     ─ package.json
     ─ README.md
     ─ vite.config.js
+    ─ vitest.config.js
 ```
 
 ## Testing
