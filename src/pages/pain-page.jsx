@@ -81,11 +81,6 @@ function Pain() {
     'feet',
   ];
 
-  useEffect(() => {
-    // grab the current pain list when the page opens
-    loadPains();
-  }, []);
-
   const loadPains = async () => {
     try {
       setLoading(true);
@@ -98,6 +93,11 @@ function Pain() {
     }
   };
 
+  useEffect(() => {
+    // grab the current pain list when the page opens
+    loadPains();
+  }, []);
+  
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
