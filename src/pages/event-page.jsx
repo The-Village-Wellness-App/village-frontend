@@ -68,20 +68,32 @@ function Event() {
 
   const VALID_CATEGORIES = ['medication', 'therapy', 'life_event', 'appointment', 'other'];
 
-  const loadEvents = async () => {
-    try {
-      setLoading(true);
-      const data = await fetchData('/events');
-      setEvents(data.events || []);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+    useEffect(() => {
+    let isMounted = true;
 
-  useEffect(() => {
-    loadEvents();
+    const fetchEvents = async () => {
+      try {
+        const data = await fetchData('/events');
+
+        if (isMounted) {
+          setEvents(data.events || []);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError(err.message);
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchEvents();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const handleInputChange = (e) => {

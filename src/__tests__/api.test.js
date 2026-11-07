@@ -5,12 +5,12 @@ const API_URL = import.meta.env.VITE_API_URL;
 
 beforeEach(() => {
   localStorage.clear();
-  global.fetch = vi.fn();
+  globalThis.fetch = vi.fn();
 });
 
 describe('fetchData', () => {
   it('calls fetch with correct URL and headers', async () => {
-    global.fetch.mockResolvedValueOnce({
+    globalThis.fetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ data: 'ok' }),
       headers: new Map([['content-type', 'application/json']]),
@@ -30,7 +30,7 @@ describe('fetchData', () => {
 
   it('attaches bearer token when present in localStorage', async () => {
     localStorage.setItem('authToken', 'fake-token');
-    global.fetch.mockResolvedValueOnce({
+    globalThis.fetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({}),
       headers: new Map([['content-type', 'application/json']]),
@@ -48,7 +48,7 @@ describe('fetchData', () => {
   });
 
   it('throws on non-ok response', async () => {
-    global.fetch.mockResolvedValueOnce({
+    globalThis.fetch.mockResolvedValueOnce({
       ok: false,
       json: async () => ({ message: 'Bad request' }),
     });
@@ -57,7 +57,7 @@ describe('fetchData', () => {
   });
 
   it('returns null for non-json responses', async () => {
-    global.fetch.mockResolvedValueOnce({
+    globalThis.fetch.mockResolvedValueOnce({
       ok: true,
       json: async () => { throw new Error('not json'); },
       headers: new Map(),
@@ -70,7 +70,7 @@ describe('fetchData', () => {
 
 describe('API helpers', () => {
   const mockOk = () =>
-    global.fetch.mockResolvedValueOnce({
+    globalThis.fetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ result: 'token' }),
       headers: new Map([['content-type', 'application/json']]),
