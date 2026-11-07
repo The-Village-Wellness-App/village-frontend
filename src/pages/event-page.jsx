@@ -271,7 +271,7 @@ function Event() {
             </Alert>
           )}
 
-          <Box component="form" onSubmit={handleSubmit}>
+          <Box component="form" onSubmit={handleSubmit} noValidate>
             <Stack spacing={2}>
               <TextField
                 fullWidth

@@ -4,10 +4,6 @@ import {
   Container,
   Typography,
   TextField,
-  // Select,
-  // MenuItem,
-  // FormControl,
-  // InputLabel,
   Button,
   Alert,
   Card,
@@ -27,52 +23,61 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { fetchData, createMood, updateMood, deleteMood } from "../services/api";
+import {
+  fetchData,
+  createMood,
+  updateMood,
+  deleteMood,
+} from "../services/api";
 
 function Mood() {
-  const [Moods, setMoods] = useState([]);
+  const [moods, setMoods] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [submitError, setSubmitError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [formData, setFormData] = useState({
-    value: 0,
+    value: 1,
     optional_text: "",
     occurred_at: dayjs(),
   });
 
   const [editingId, setEditingId] = useState(null);
   const [editFormData, setEditFormData] = useState({
-    value: 0,
+    value: 1,
     optional_text: "",
     occurred_at: dayjs(),
   });
   const [isEditSubmitting, setIsEditSubmitting] = useState(false);
   const [editError, setEditError] = useState(null);
+
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [moodToDelete, setMoodToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const loadMoods = async () => {
-    try {
-      setLoading(true);
-      const data = await fetchData("/moods");
-      setMoods(data?.data || []);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Load existing mood entries when the page opens.
   useEffect(() => {
-    // grab the current mood list when the page opens
+    const loadMoods = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const data = await fetchData("/moods");
+        setMoods(data?.data || []);
+      } catch (err) {
+        setError(err.message || "Failed to load mood entries.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
     loadMoods();
   }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+
     setFormData((prev) => ({
       ...prev,
       [name]: value,
@@ -86,68 +91,80 @@ function Mood() {
     }));
   };
 
+  // Create a new mood entry.
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitError(null);
 
-    // keep the form simple and make sure the value is in range
-
     const parsedValue = Number(formData.value);
 
-    if (formData.value === "" || Number.isNaN(parsedValue)) {
-      setSubmitError("mood value is required");
+    if (
+      formData.value === "" ||
+      Number.isNaN(parsedValue)
+    ) {
+      setSubmitError("Mood value is required.");
       return;
     }
 
-    if (parsedValue < 0 || parsedValue > 10) {
-      setSubmitError("mood value must be between 0 and 10");
+    if (parsedValue < 1 || parsedValue > 10) {
+      setSubmitError("Mood value must be between 1 and 10.");
       return;
     }
 
     try {
       setIsSubmitting(true);
+
       const response = await createMood({
         value: parsedValue,
-        optional_text: formData.optional_text.trim() || "",
+        optional_text: formData.optional_text.trim(),
         occurred_at: formData.occurred_at.toISOString(),
       });
 
-      // put the newest mood entry at the top so it feels live
-      setMoods((prev) => [response?.data || response, ...prev]);
+      setMoods((prev) => [
+        response?.data || response,
+        ...prev,
+      ]);
+
       setFormData({
-        value: 0,
+        value: 1,
         optional_text: "",
         occurred_at: dayjs(),
       });
     } catch (err) {
-      setSubmitError(err.message);
+      setSubmitError(err.message || "Failed to save mood entry.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  // Open the edit dialog and populate it with the selected mood.
   const handleEditStart = (mood) => {
     setEditingId(mood._id);
+
     setEditFormData({
-      value: Number(mood.value ?? 0),
+      value: Number(mood.value ?? 1),
       optional_text: mood.optional_text || "",
       occurred_at: dayjs(mood.occurred_at),
     });
+
     setEditError(null);
   };
 
   const handleEditCancel = () => {
     setEditingId(null);
+
     setEditFormData({
-      value: 0,
+      value: 1,
       optional_text: "",
       occurred_at: dayjs(),
     });
+
     setEditError(null);
   };
 
   const handleEditChange = (e) => {
     const { name, value } = e.target;
+
     setEditFormData((prev) => ({
       ...prev,
       [name]: value,
@@ -161,61 +178,76 @@ function Mood() {
     }));
   };
 
+  // Save changes to an existing mood entry.
   const handleEditSubmit = async (e) => {
     e.preventDefault();
     setEditError(null);
 
     const parsedValue = Number(editFormData.value);
 
-    if (editFormData.value === "" || Number.isNaN(parsedValue)) {
-      setEditError("Mood value is required");
+    if (
+      editFormData.value === "" ||
+      Number.isNaN(parsedValue)
+    ) {
+      setEditError("Mood value is required.");
       return;
     }
 
-    if (parsedValue < 0 || parsedValue > 10) {
-      setEditError("Mood value must be between 0 and 10");
+    if (parsedValue < 1 || parsedValue > 10) {
+      setEditError("Mood value must be between 1 and 10.");
       return;
     }
 
     try {
       setIsEditSubmitting(true);
+
       const response = await updateMood(editingId, {
         value: parsedValue,
-        optional_text: editFormData.optional_text.trim() || "",
+        optional_text: editFormData.optional_text.trim(),
         occurred_at: editFormData.occurred_at.toISOString(),
       });
 
-      // swap in the updated entry without reloading the whole page
+      const updatedMood = response?.data || response;
+
       setMoods((prev) =>
         prev.map((mood) =>
-          mood._id === editingId ? response?.data || response : mood,
+          mood._id === editingId ? updatedMood : mood,
         ),
       );
+
       handleEditCancel();
     } catch (err) {
-      setEditError(err.message);
+      setEditError(err.message || "Failed to update mood entry.");
     } finally {
       setIsEditSubmitting(false);
     }
   };
 
+  // Open the delete confirmation dialog.
   const handleDeleteStart = (mood) => {
     setMoodToDelete(mood);
     setDeleteConfirmOpen(true);
   };
 
+  // Delete the selected mood entry.
   const handleDeleteConfirm = async () => {
+    if (!moodToDelete) return;
+
     try {
       setIsDeleting(true);
+
       await deleteMood(moodToDelete._id);
-      // remove it from the list right away after the delete goes through
-      setMoods((prev) => prev.filter((mood) => mood._id !== moodToDelete._id));
+
+      setMoods((prev) =>
+        prev.filter((mood) => mood._id !== moodToDelete._id),
+      );
+
       setDeleteConfirmOpen(false);
       setMoodToDelete(null);
     } catch (err) {
       setDeleteConfirmOpen(false);
       setMoodToDelete(null);
-      setError("Failed to delete mood entry: " + err.message);
+      setError(`Failed to delete mood entry: ${err.message}`);
     } finally {
       setIsDeleting(false);
     }
@@ -226,6 +258,7 @@ function Mood() {
     setMoodToDelete(null);
   };
 
+  // Loading state.
   if (loading) {
     return (
       <Container
@@ -242,6 +275,7 @@ function Mood() {
     );
   }
 
+  // Error state.
   if (error) {
     return (
       <Container maxWidth="md" sx={{ py: 4 }}>
@@ -252,6 +286,7 @@ function Mood() {
 
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
+      {/* Page heading */}
       <Typography
         variant="h3"
         component="h1"
@@ -261,6 +296,7 @@ function Mood() {
         Mood Tracking
       </Typography>
 
+      {/* Add mood entry */}
       <Card sx={{ mb: 4 }}>
         <CardContent>
           <Typography variant="h5" component="h2" gutterBottom sx={{ mb: 3 }}>
@@ -273,12 +309,13 @@ function Mood() {
             </Alert>
           )}
 
-          <Box component="form" onSubmit={handleSubmit}>
+          <Box component="form" onSubmit={handleSubmit} noValidate>
             <Stack spacing={2}>
               <Box>
                 <Typography gutterBottom>
                   Mood Value: {formData.value}/10
                 </Typography>
+
                 <Slider
                   value={Number(formData.value)}
                   onChange={(_, newValue) =>
@@ -287,7 +324,7 @@ function Mood() {
                   valueLabelDisplay="auto"
                   step={1}
                   marks
-                  min={0}
+                  min={1}
                   max={10}
                 />
               </Box>
@@ -315,7 +352,9 @@ function Mood() {
                     }))
                   }
                   format="DD/MM/YYYY"
-                  slotProps={{ textField: { fullWidth: true } }}
+                  slotProps={{
+                    textField: { fullWidth: true },
+                  }}
                 />
               </LocalizationProvider>
 
@@ -327,23 +366,26 @@ function Mood() {
                 disabled={isSubmitting}
                 sx={{ mt: 1 }}
               >
-                {isSubmitting ? "Saving..." : "Save mood Entry"}
+                {isSubmitting ? "Saving..." : "Save Mood Entry"}
               </Button>
             </Stack>
           </Box>
         </CardContent>
       </Card>
 
+      {/* Mood history */}
       <Box>
         <Typography variant="h5" component="h2" gutterBottom sx={{ mb: 3 }}>
           Your Mood Entries
         </Typography>
 
-        {Moods.length === 0 ? (
-          <Alert severity="info">No mood entries yet. Add one above.</Alert>
+        {moods.length === 0 ? (
+          <Alert severity="info">
+            No mood entries yet. Add one above.
+          </Alert>
         ) : (
           <Stack spacing={2}>
-            {Moods.map((mood) => (
+            {moods.map((mood) => (
               <Card key={mood._id}>
                 <CardContent>
                   <Box
@@ -355,8 +397,9 @@ function Mood() {
                   >
                     <Box sx={{ flex: 1 }}>
                       <Typography variant="h6" component="h3" gutterBottom>
-                        mood Level: {mood.value}/10
+                        Mood Level: {mood.value}/10
                       </Typography>
+
                       <Typography
                         variant="body2"
                         color="textSecondary"
@@ -365,26 +408,31 @@ function Mood() {
                         <strong>Date:</strong>{" "}
                         {dayjs(mood.occurred_at).format("DD/MM/YYYY")}
                       </Typography>
+
                       {mood.optional_text && (
                         <Typography variant="body2" sx={{ mt: 1 }}>
                           <strong>Notes:</strong> {mood.optional_text}
                         </Typography>
                       )}
                     </Box>
+
                     <Box sx={{ ml: 2 }}>
                       <IconButton
                         size="small"
                         onClick={() => handleEditStart(mood)}
                         color="primary"
                         title="Edit mood entry"
+                        aria-label="Edit mood entry"
                       >
                         <EditIcon />
                       </IconButton>
+
                       <IconButton
                         size="small"
                         onClick={() => handleDeleteStart(mood)}
                         color="error"
                         title="Delete mood entry"
+                        aria-label="Delete mood entry"
                       >
                         <DeleteIcon />
                       </IconButton>
@@ -397,27 +445,36 @@ function Mood() {
         )}
       </Box>
 
+      {/* Edit mood dialog */}
       <Dialog
         open={editingId !== null}
         onClose={handleEditCancel}
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle>Edit mood Entry</DialogTitle>
+        <DialogTitle>Edit Mood Entry</DialogTitle>
+
         <DialogContent sx={{ pt: 2 }}>
           {editError && (
             <Alert severity="error" sx={{ mb: 2 }}>
               {editError}
             </Alert>
           )}
+
           <Box
             component="form"
-            sx={{ display: "flex", flexDirection: "column", gap: 2 }}
+            onSubmit={handleEditSubmit}
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 2,
+            }}
           >
             <Box>
               <Typography gutterBottom>
-                mood Value: {editFormData.value}/10
+                Mood Value: {editFormData.value}/10
               </Typography>
+
               <Slider
                 value={Number(editFormData.value)}
                 onChange={(_, newValue) =>
@@ -426,7 +483,7 @@ function Mood() {
                 valueLabelDisplay="auto"
                 step={1}
                 marks
-                min={0}
+                min={1}
                 max={10}
               />
             </Box>
@@ -453,13 +510,19 @@ function Mood() {
                   }))
                 }
                 format="DD/MM/YYYY"
-                slotProps={{ textField: { fullWidth: true } }}
+                slotProps={{
+                  textField: { fullWidth: true },
+                }}
               />
             </LocalizationProvider>
           </Box>
         </DialogContent>
+
         <DialogActions>
-          <Button onClick={handleEditCancel}>Cancel</Button>
+          <Button onClick={handleEditCancel}>
+            Cancel
+          </Button>
+
           <Button
             onClick={handleEditSubmit}
             variant="contained"
@@ -471,21 +534,29 @@ function Mood() {
         </DialogActions>
       </Dialog>
 
+      {/* Delete confirmation dialog */}
       <Dialog
         open={deleteConfirmOpen}
         onClose={handleDeleteCancel}
         aria-labelledby="alert-dialog-title"
         aria-describedby="alert-dialog-description"
       >
-        <DialogTitle id="alert-dialog-title">Delete mood Entry?</DialogTitle>
+        <DialogTitle id="alert-dialog-title">
+          Delete Mood Entry?
+        </DialogTitle>
+
         <DialogContent>
           <Typography id="alert-dialog-description">
-            Are you sure you want to delete this mood entry? This action cannot
-            be undone.
+            Are you sure you want to delete this mood entry? This action
+            cannot be undone.
           </Typography>
         </DialogContent>
+
         <DialogActions>
-          <Button onClick={handleDeleteCancel}>Cancel</Button>
+          <Button onClick={handleDeleteCancel}>
+            Cancel
+          </Button>
+
           <Button
             onClick={handleDeleteConfirm}
             variant="contained"

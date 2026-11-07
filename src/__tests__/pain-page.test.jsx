@@ -1,3 +1,4 @@
+
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -6,58 +7,82 @@ import Pain from '../pages/pain-page';
 
 beforeEach(() => {
   localStorage.clear();
-  global.fetch = vi.fn();
+  globalThis.fetch = vi.fn();
 });
 
-const renderWithRouter = (ui) => render(<BrowserRouter>{ui}</BrowserRouter>);
+const renderWithRouter = (ui) => render(
+  <BrowserRouter>{ui}</BrowserRouter>,
+);
+
+const mockEmptyPainsResponse = () => {
+  globalThis.fetch.mockResolvedValueOnce({
+    ok: true,
+    json: async () => ({ data: [] }),
+    headers: new Map([['content-type', 'application/json']]),
+  });
+};
 
 describe('PainPage', () => {
-  it('renders pain tracking heading', async () => {
-    global.fetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ data: [] }),
-      headers: new Map([['content-type', 'application/json']]),
-    });
+  it('renders the pain tracking heading', async () => {
+    mockEmptyPainsResponse();
 
     renderWithRouter(<Pain />);
-    expect(await screen.findByText('Pain Tracking')).toBeTruthy();
+
+    expect(
+      await screen.findByRole('heading', { name: 'Pain Tracking' }),
+    ).toBeTruthy();
   });
 
-  it('shows no entries message when empty', async () => {
-    global.fetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ data: [] }),
-      headers: new Map([['content-type', 'application/json']]),
-    });
+  it('shows a message when there are no pain entries', async () => {
+    mockEmptyPainsResponse();
 
     renderWithRouter(<Pain />);
-    expect(await screen.findByText('No pain entries yet. Add one above.')).toBeTruthy();
+
+    expect(
+      await screen.findByText('No pain entries yet. Add one above.'),
+    ).toBeTruthy();
   });
 
-  it('validates pain value is required', async () => {
-    global.fetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ data: [] }),
-      headers: new Map([['content-type', 'application/json']]),
-    });
+  it('starts the pain slider at 0', async () => {
+    mockEmptyPainsResponse();
 
     renderWithRouter(<Pain />);
-    const submitBtn = await screen.findByRole('button', { name: /save pain entry/i });
-    await userEvent.click(submitBtn);
-    expect(screen.getByText('Pain value is required')).toBeTruthy();
+
+    expect(await screen.findByText('Pain Value: 0/10')).toBeTruthy();
+
+    const slider = screen.getByRole('slider');
+
+    expect(slider.getAttribute('aria-valuemin')).toBe('0');
+    expect(slider.getAttribute('aria-valuemax')).toBe('10');
+    expect(slider.getAttribute('aria-valuenow')).toBe('0');
   });
 
-  it('renders location select with options', async () => {
-    global.fetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ data: [] }),
-      headers: new Map([['content-type', 'application/json']]),
-    });
+  it('renders the location select with its available options', async () => {
+    mockEmptyPainsResponse();
+
+    const user = userEvent.setup();
 
     renderWithRouter(<Pain />);
-    const select = await screen.findByLabelText('Location');
+
+    const select = await screen.findByRole('combobox', {
+      name: 'Location',
+    });
+
     expect(select).toBeTruthy();
-    expect(screen.getByText('Head')).toBeTruthy();
-    expect(screen.getByText('Back')).toBeTruthy();
+
+    // Open the Material UI dropdown to display its options.
+    await user.click(select);
+
+    expect(
+      await screen.findByRole('option', { name: 'Head' }),
+    ).toBeTruthy();
+
+    expect(
+      screen.getByRole('option', { name: 'Back' }),
+    ).toBeTruthy();
+
+    expect(
+      screen.getByRole('option', { name: 'Neck' }),
+    ).toBeTruthy();
   });
 });

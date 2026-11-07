@@ -2,18 +2,26 @@ import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import App from '../App';
+import { ThemeProviderWrapper } from '../contexts/ThemeContext';
 
-const renderWithRouter = (ui) => render(<BrowserRouter>{ui}</BrowserRouter>);
+const renderWithProviders = (ui) => render(
+  <ThemeProviderWrapper>
+    <BrowserRouter>{ui}</BrowserRouter>
+  </ThemeProviderWrapper>,
+);
 
 describe('App routing', () => {
-  it('renders home page at /', async () => {
-    renderWithRouter(<App />);
-    expect(await screen.findByText('Hello World')).toBeTruthy();
+  it('renders the home page at /', async () => {
+    window.history.pushState({}, '', '/');
+    renderWithProviders(<App />);
+
+    expect(await screen.findByRole('heading', { name: 'Hello!' })).toBeTruthy();
   });
 
-  it('renders login page at /login', async () => {
+  it('renders the login page at /login', async () => {
     window.history.pushState({}, '', '/login');
-    renderWithRouter(<App />);
-    expect(await screen.findByLabelText('Email')).toBeTruthy();
+    renderWithProviders(<App />);
+
+    expect(await screen.findByLabelText(/email/i)).toBeTruthy();
   });
 });

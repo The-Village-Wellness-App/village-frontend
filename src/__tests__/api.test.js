@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { fetchData, loginUser, registerUser, forgotPassword, resetPassword, createEvent, updateEvent, deleteEvent, createPain, updatePain, deletePain, createMood, updateMood, deleteMood } from '../services/api';
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 beforeEach(() => {
   localStorage.clear();
   global.fetch = vi.fn();
@@ -16,7 +18,7 @@ describe('fetchData', () => {
 
     const result = await fetchData('/test');
     expect(fetch).toHaveBeenCalledWith(
-      'http://localhost:3000/test',
+      `${API_URL}/test`,
       expect.objectContaining({
         headers: expect.objectContaining({
           'Content-Type': 'application/json',
@@ -36,7 +38,7 @@ describe('fetchData', () => {
 
     await fetchData('/test');
     expect(fetch).toHaveBeenCalledWith(
-      'http://localhost:3000/test',
+      `${API_URL}/test`,
       expect.objectContaining({
         headers: expect.objectContaining({
           Authorization: 'Bearer fake-token',
@@ -78,7 +80,7 @@ describe('API helpers', () => {
     mockOk();
     await loginUser({ email: 'a@b.com', password: '123' });
     expect(fetch).toHaveBeenCalledWith(
-      'http://localhost:3000/users/login',
+      `${API_URL}/users/login`,
       expect.objectContaining({ method: 'POST' }),
     );
   });
@@ -87,7 +89,7 @@ describe('API helpers', () => {
     mockOk();
     await registerUser({ username: 'u', email: 'a@b.com', password: '123' });
     expect(fetch).toHaveBeenCalledWith(
-      'http://localhost:3000/users/signup',
+      `${API_URL}/users/signup`,
       expect.objectContaining({ method: 'POST' }),
     );
   });
@@ -96,7 +98,7 @@ describe('API helpers', () => {
     mockOk();
     await forgotPassword('a@b.com');
     expect(fetch).toHaveBeenCalledWith(
-      'http://localhost:3000/users/forgot-password',
+      `${API_URL}/users/forgot-password`,
       expect.objectContaining({ method: 'POST' }),
     );
   });
@@ -105,7 +107,7 @@ describe('API helpers', () => {
     mockOk();
     await resetPassword({ token: 't', password: '123' });
     expect(fetch).toHaveBeenCalledWith(
-      'http://localhost:3000/users/reset-password',
+      `${API_URL}/users/reset-password`,
       expect.objectContaining({ method: 'POST' }),
     );
   });
@@ -114,7 +116,7 @@ describe('API helpers', () => {
     mockOk();
     await createEvent({ title: 'e', category: 'other', occurred_at: '2024-01-01' });
     expect(fetch).toHaveBeenCalledWith(
-      'http://localhost:3000/events',
+      `${API_URL}/events`,
       expect.objectContaining({ method: 'POST' }),
     );
   });
@@ -123,7 +125,7 @@ describe('API helpers', () => {
     mockOk();
     await updateEvent('abc', { title: 'e' });
     expect(fetch).toHaveBeenCalledWith(
-      'http://localhost:3000/events/abc',
+      `${API_URL}/events/abc`,
       expect.objectContaining({ method: 'PATCH' }),
     );
   });
@@ -132,7 +134,7 @@ describe('API helpers', () => {
     mockOk();
     await deleteEvent('abc');
     expect(fetch).toHaveBeenCalledWith(
-      'http://localhost:3000/events/abc',
+      `${API_URL}/events/abc`,
       expect.objectContaining({ method: 'DELETE' }),
     );
   });
@@ -141,7 +143,7 @@ describe('API helpers', () => {
     mockOk();
     await createPain({ value: 5, location: 'head', occurred_at: '2024-01-01' });
     expect(fetch).toHaveBeenCalledWith(
-      'http://localhost:3000/pains',
+      `${API_URL}/pains`,
       expect.objectContaining({ method: 'POST' }),
     );
   });
@@ -150,7 +152,7 @@ describe('API helpers', () => {
     mockOk();
     await updatePain('abc', { value: 5 });
     expect(fetch).toHaveBeenCalledWith(
-      'http://localhost:3000/pains/abc',
+      `${API_URL}/pains/abc`,
       expect.objectContaining({ method: 'PATCH' }),
     );
   });
@@ -159,7 +161,7 @@ describe('API helpers', () => {
     mockOk();
     await deletePain('abc');
     expect(fetch).toHaveBeenCalledWith(
-      'http://localhost:3000/pains/abc',
+      `${API_URL}/pains/abc`,
       expect.objectContaining({ method: 'DELETE' }),
     );
   });
@@ -168,7 +170,7 @@ describe('API helpers', () => {
     mockOk();
     await createMood({ value: 7, occurred_at: '2024-01-01' });
     expect(fetch).toHaveBeenCalledWith(
-      'http://localhost:3000/moods',
+      `${API_URL}/moods`,
       expect.objectContaining({ method: 'POST' }),
     );
   });
@@ -177,7 +179,7 @@ describe('API helpers', () => {
     mockOk();
     await updateMood('abc', { value: 7 });
     expect(fetch).toHaveBeenCalledWith(
-      'http://localhost:3000/moods/abc',
+      `${API_URL}/moods/abc`,
       expect.objectContaining({ method: 'PATCH' }),
     );
   });
@@ -186,7 +188,7 @@ describe('API helpers', () => {
     mockOk();
     await deleteMood('abc');
     expect(fetch).toHaveBeenCalledWith(
-      'http://localhost:3000/moods/abc',
+      `${API_URL}/moods/abc`,
       expect.objectContaining({ method: 'DELETE' }),
     );
   });

@@ -35,7 +35,7 @@ export default function LoginPage() {
       <Card elevation={3}>
         <CardContent sx={{ p: { xs: 3, sm: 4 } }}>
           <Stack spacing={3}>
-            <Box textAlign="center">
+            <Box sx={{ textAlign: "center" }}>
               <Typography variant="h4" component="h1" gutterBottom>
                 {isAuthenticated ? "Welcome back" : view === "forgot" ? "Reset password" : view === "register" ? "Create account" : "Sign in"}
               </Typography>

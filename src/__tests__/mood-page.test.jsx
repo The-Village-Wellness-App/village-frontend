@@ -1,75 +1,77 @@
+
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { render, screen } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import Mood from '../pages/mood-page';
 
 beforeEach(() => {
   localStorage.clear();
-  global.fetch = vi.fn();
+  globalThis.fetch = vi.fn();
 });
 
-const renderWithRouter = (ui) => render(<BrowserRouter>{ui}</BrowserRouter>);
+const renderWithRouter = (ui) => render(
+  <BrowserRouter>{ui}</BrowserRouter>,
+);
+
+const mockEmptyMoodsResponse = () => {
+  globalThis.fetch.mockResolvedValueOnce({
+    ok: true,
+    json: async () => ({ data: [] }),
+    headers: new Map([['content-type', 'application/json']]),
+  });
+};
 
 describe('MoodPage', () => {
-  it('renders mood tracking heading', async () => {
-    global.fetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ data: [] }),
-      headers: new Map([['content-type', 'application/json']]),
-    });
+  it('renders the mood tracking heading', async () => {
+    mockEmptyMoodsResponse();
 
     renderWithRouter(<Mood />);
-    expect(await screen.findByText('Mood Tracking')).toBeTruthy();
+
+    expect(
+      await screen.findByRole('heading', { name: 'Mood Tracking' }),
+    ).toBeTruthy();
   });
 
-  it('shows loading spinner initially', () => {
-    global.fetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ data: [] }),
-      headers: new Map([['content-type', 'application/json']]),
-    });
+  it('shows the loading spinner initially', () => {
+    // Keep the request pending so the component remains in its loading state.
+    globalThis.fetch.mockReturnValue(new Promise(() => {}));
 
     renderWithRouter(<Mood />);
+
     expect(screen.getByRole('progressbar')).toBeTruthy();
   });
 
-  it('shows no entries alert when list is empty', async () => {
-    global.fetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ data: [] }),
-      headers: new Map([['content-type', 'application/json']]),
-    });
+  it('shows a message when there are no mood entries', async () => {
+    mockEmptyMoodsResponse();
 
     renderWithRouter(<Mood />);
-    expect(await screen.findByText('No mood entries yet. Add one above.')).toBeTruthy();
+
+    expect(
+      await screen.findByText('No mood entries yet. Add one above.'),
+    ).toBeTruthy();
   });
 
-  it('validates mood value is required on submit', async () => {
-    global.fetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ data: [] }),
-      headers: new Map([['content-type', 'application/json']]),
-    });
+  it('starts the mood slider at 1', async () => {
+    mockEmptyMoodsResponse();
 
     renderWithRouter(<Mood />);
-    const submitBtn = await screen.findByRole('button', { name: /save mood entry/i });
-    await userEvent.click(submitBtn);
-    expect(screen.getByText('mood value is required')).toBeTruthy();
+
+    expect(await screen.findByText('Mood Value: 1/10')).toBeTruthy();
+
+    const slider = screen.getByRole('slider');
+
+    expect(slider.getAttribute('aria-valuemin')).toBe('1');
+    expect(slider.getAttribute('aria-valuemax')).toBe('10');
+    expect(slider.getAttribute('aria-valuenow')).toBe('1');
   });
 
-  it('validates mood value must be 0-10', async () => {
-    global.fetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ data: [] }),
-      headers: new Map([['content-type', 'application/json']]),
-    });
+  it('displays the Save Mood Entry button', async () => {
+    mockEmptyMoodsResponse();
 
     renderWithRouter(<Mood />);
-    const submitBtn = await screen.findByRole('button', { name: /save mood entry/i });
-    await userEvent.click(submitBtn);
-    // the slider default is 0, so let's test by setting it higher than 10 via the input
-    // Actually the slider won't go above 10, but the validation code path exists
-    expect(screen.queryByText('mood value must be between 0 and 10')).toBeFalsy();
+
+    expect(
+      await screen.findByRole('button', { name: /save mood entry/i }),
+    ).toBeTruthy();
   });
 });

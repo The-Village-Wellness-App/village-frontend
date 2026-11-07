@@ -50,7 +50,7 @@ export default function HomePage() {
         <Grid size={{ xs: 12, md: 4 }}>
           <Card>
             <CardContent>
-              <Stack spacing={2} alignItems="center">
+              <Stack spacing={2} sx={{ alignItems: 'center' }}>
                 <MoodIcon color="secondary" sx={{ fontSize: 60 }} />
 
                 <Typography variant="h6">Log Mood</Typography>
@@ -70,7 +70,7 @@ export default function HomePage() {
         <Grid size={{ xs: 12, md: 4 }}>
           <Card>
             <CardContent>
-              <Stack spacing={2} alignItems="center">
+              <Stack spacing={2} sx={{ alignItems: 'center' }}>
                 <FavoriteIcon color="error" sx={{ fontSize: 60 }} />
 
                 <Typography variant="h6">Log Pain</Typography>
@@ -90,7 +90,7 @@ export default function HomePage() {
         <Grid size={{ xs: 12, md: 4 }}>
           <Card>
             <CardContent>
-              <Stack spacing={2} alignItems="center">
+              <Stack spacing={2} sx={{ alignItems: 'center' }}>
                 <EventIcon color="primary" sx={{ fontSize: 60 }} />
 
                 <Typography variant="h6">Log Event</Typography>

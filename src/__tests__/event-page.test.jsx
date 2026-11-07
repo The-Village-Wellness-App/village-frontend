@@ -1,3 +1,4 @@
+
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -6,58 +7,85 @@ import Event from '../pages/event-page';
 
 beforeEach(() => {
   localStorage.clear();
-  global.fetch = vi.fn();
+  globalThis.fetch = vi.fn();
 });
 
-const renderWithRouter = (ui) => render(<BrowserRouter>{ui}</BrowserRouter>);
+const renderWithRouter = (ui) => {
+  return render(
+    <BrowserRouter>
+      {ui}
+    </BrowserRouter>,
+  );
+};
+
+const mockEmptyEventsResponse = () => {
+  globalThis.fetch.mockResolvedValueOnce({
+    ok: true,
+    json: async () => ({ events: [] }),
+    headers: new Map([
+      ['content-type', 'application/json'],
+    ]),
+  });
+};
 
 describe('EventPage', () => {
-  it('renders events heading', async () => {
-    global.fetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ events: [] }),
-      headers: new Map([['content-type', 'application/json']]),
-    });
+  it('renders the events heading', async () => {
+    mockEmptyEventsResponse();
 
     renderWithRouter(<Event />);
-    expect(await screen.findByText('Events')).toBeTruthy();
+
+    expect(
+      await screen.findByRole('heading', { name: 'Events' }),
+    ).toBeTruthy();
   });
 
-  it('shows no events message when empty', async () => {
-    global.fetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ events: [] }),
-      headers: new Map([['content-type', 'application/json']]),
-    });
+  it('shows a message when there are no events', async () => {
+    mockEmptyEventsResponse();
 
     renderWithRouter(<Event />);
-    expect(await screen.findByText('No events yet. Create one above!')).toBeTruthy();
+
+    expect(
+      await screen.findByText('No events yet. Create one above!'),
+    ).toBeTruthy();
   });
 
-  it('validates title is required on submit', async () => {
-    global.fetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ events: [] }),
-      headers: new Map([['content-type', 'application/json']]),
-    });
+  it('validates that the title is required on submit', async () => {
+    mockEmptyEventsResponse();
+
+    const user = userEvent.setup();
 
     renderWithRouter(<Event />);
-    const submitBtn = await screen.findByRole('button', { name: /create event/i });
-    await userEvent.click(submitBtn);
-    expect(screen.getByText('Title is required')).toBeTruthy();
+
+    const submitButton = await screen.findByRole('button', {
+      name: /create event/i,
+    });
+
+    await user.click(submitButton);
+
+    expect(
+      await screen.findByText('Title is required'),
+    ).toBeTruthy();
   });
 
-  it('renders category select with options', async () => {
-    global.fetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ events: [] }),
-      headers: new Map([['content-type', 'application/json']]),
-    });
+  it('renders the category select with its available options', async () => {
+    mockEmptyEventsResponse();
+
+    const user = userEvent.setup();
 
     renderWithRouter(<Event />);
-    const select = await screen.findByLabelText('Category');
-    expect(select).toBeTruthy();
-    expect(screen.getByText('Medication')).toBeTruthy();
-    expect(screen.getByText('Therapy')).toBeTruthy();
+
+    const categorySelect = await screen.findByLabelText('Category');
+
+    expect(categorySelect).toBeTruthy();
+
+    await user.click(categorySelect);
+
+    expect(
+      await screen.findByRole('option', { name: 'Medication' }),
+    ).toBeTruthy();
+
+    expect(
+      screen.getByRole('option', { name: 'Therapy' }),
+    ).toBeTruthy();
   });
 });
