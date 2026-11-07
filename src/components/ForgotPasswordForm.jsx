@@ -124,7 +124,7 @@ export default function ForgotPasswordForm({ onBackToLogin, onStatus }) {
           {loading ? "Please wait..." : showReset ? "Reset password" : "Send reset link"}
         </Button>
 
-        <Typography variant="body2" textAlign="center">
+        <Typography variant="body2" sx={{ textAlign: "center" }}>
           <Link component="button" type="button" onClick={onBackToLogin}>
             Back to login
           </Link>

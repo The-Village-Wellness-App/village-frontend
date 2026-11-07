@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Alert, Box, Button, Card, CardContent, Container, Stack, Typography } from "@mui/material";
 import LoginForm from "../components/LoginForm";
 import RegisterForm from "../components/RegisterForm";
@@ -7,14 +7,12 @@ import { useThemeContext } from "../contexts/ThemeContext";
 
 export default function LoginPage() {
   const [view, setView] = useState("login");
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(
+  () => Boolean(localStorage.getItem("authToken"))
+);
   const [statusMessage, setStatusMessage] = useState("");
   const [statusSeverity, setStatusSeverity] = useState("success");
   const { mode, updateTheme } = useThemeContext();
-
-  useEffect(() => {
-    setIsAuthenticated(Boolean(localStorage.getItem("authToken")));
-  }, []);
 
   const handleAuthSuccess = () => {
     setStatusMessage("Authentication successful.");
@@ -35,7 +33,7 @@ export default function LoginPage() {
       <Card elevation={3}>
         <CardContent sx={{ p: { xs: 3, sm: 4 } }}>
           <Stack spacing={3}>
-            <Box textAlign="center">
+            <Box sx={{ textAlign: "center" }}>
               <Typography variant="h4" component="h1" gutterBottom>
                 {isAuthenticated ? "Welcome back" : view === "forgot" ? "Reset password" : view === "register" ? "Create account" : "Sign in"}
               </Typography>

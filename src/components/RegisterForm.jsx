@@ -97,7 +97,7 @@ export default function RegisterForm({ onSwitchToLogin, onAuthSuccess }) {
           {loading ? "Creating account..." : "Create account"}
         </Button>
 
-        <Typography variant="body2" textAlign="center">
+        <Typography variant="body2" sx={{ textAlign: "center" }}>
           Already have an account? {" "}
           <Link component="button" type="button" onClick={onSwitchToLogin}>
             Log in

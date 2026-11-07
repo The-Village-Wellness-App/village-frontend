@@ -81,22 +81,34 @@ function Pain() {
     'feet',
   ];
 
-  const loadPains = async () => {
+  useEffect(() => {
+  let isMounted = true;
+
+  const fetchPains = async () => {
     try {
-      setLoading(true);
       const data = await fetchData('/pains');
-      setPains(data?.data || []);
+
+      if (isMounted) {
+        setPains(data?.data || []);
+      }
     } catch (err) {
-      setError(err.message);
+      if (isMounted) {
+        setError(err.message);
+      }
     } finally {
-      setLoading(false);
+      if (isMounted) {
+        setLoading(false);
+      }
     }
   };
 
-  useEffect(() => {
-    // grab the current pain list when the page opens
-    loadPains();
-  }, []);
+  // Grab the current pain list when the page opens.
+  fetchPains();
+
+  return () => {
+    isMounted = false;
+  };
+}, []);
   
   const handleInputChange = (e) => {
     const { name, value } = e.target;

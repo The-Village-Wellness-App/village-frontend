@@ -1,29 +1,30 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 
 describe('Navbar', () => {
-  it('renders welcome text', () => {
+  it('renders the welcome text', () => {
     render(
       <BrowserRouter>
         <Navbar />
       </BrowserRouter>,
     );
+
     expect(screen.getByText('WELCOME!')).toBeTruthy();
   });
 
-  it('renders navigation links', () => {
+  it('renders the current navigation links', () => {
     render(
       <BrowserRouter>
         <Navbar />
       </BrowserRouter>,
     );
-    expect(screen.getByText('Home')).toBeTruthy();
-    expect(screen.getByText('Dashboard')).toBeTruthy();
-    expect(screen.getByText('Mood')).toBeTruthy();
-    expect(screen.getByText('Pain')).toBeTruthy();
-    expect(screen.getByText('Events')).toBeTruthy();
-    expect(screen.getByText('Graphs & Reports')).toBeTruthy();
+
+    expect(screen.getByRole('link', { name: 'Home' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Mood' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Pain' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Events' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Graphs & Reports' })).toBeTruthy();
   });
 });

@@ -49,7 +49,7 @@ export default function LoginForm({ onSwitchToRegister, onForgotPassword, onAuth
   };
 
   return (
-    <Box component="form" onSubmit={handleSubmit}>
+    <Box component="form" onSubmit={handleSubmit} noValidate>
       <Stack spacing={2}>
         {error && <Alert severity="error">{error}</Alert>}
 
@@ -77,13 +77,13 @@ export default function LoginForm({ onSwitchToRegister, onForgotPassword, onAuth
           {loading ? "Signing in..." : "Log in"}
         </Button>
 
-        <Typography variant="body2" textAlign="center">
+        <Typography variant="body2" sx={{ textAlign: "center" }}>
           <Link component="button" type="button" onClick={onForgotPassword}>
             Forgot password?
           </Link>
         </Typography>
 
-        <Typography variant="body2" textAlign="center">
+        <Typography variant="body2" sx={{ textAlign: "center" }}>
           Need an account? {" "}
           <Link component="button" type="button" onClick={onSwitchToRegister}>
             Register
