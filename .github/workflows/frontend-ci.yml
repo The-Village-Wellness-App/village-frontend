@@ -52,6 +52,8 @@ jobs:
             2>&1 | tee logs/vitest.log
 
       - name: Build production frontend
+        env:
+          VITE_API_URL: ${{ vars.VITE_API_URL }}
         run: |
           set -o pipefail
           npm run build 2>&1 | tee logs/build.log
