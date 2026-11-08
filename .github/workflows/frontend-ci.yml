@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   frontend-ci:
-    name: Lint, Test and Build
+    name: Lint, Test, Build and Deploy
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -30,14 +30,47 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run ESLint
-        run: npm run lint
+      - name: Prepare artefact directories
+        run: |
+          mkdir -p logs
+          mkdir -p test-results
 
-      - name: Run tests
-        run: npm run test
+      # CONTINUOUS INTEGRATION
+
+      - name: Run ESLint
+        run: |
+          set -o pipefail
+          npm run lint 2>&1 | tee logs/eslint.log
+
+      - name: Run Vitest
+        run: |
+          set -o pipefail
+          npm run test -- \
+            --reporter=default \
+            --reporter=junit \
+            --outputFile.junit=test-results/junit.xml \
+            2>&1 | tee logs/vitest.log
 
       - name: Build production frontend
-        run: npm run build
+        run: |
+          set -o pipefail
+          npm run build 2>&1 | tee logs/build.log
+
+      # ARTEFACT RETENTION
+
+      - name: Upload frontend CI artefacts
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: frontend-ci-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            logs/
+            test-results/
+            dist/
+          if-no-files-found: warn
+          retention-days: 30
+
+      # CONTINUOUS DEPLOYMENT
 
       - name: Deploy to Netlify
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
