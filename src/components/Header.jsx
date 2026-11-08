@@ -1,7 +1,7 @@
 import { useMediaQuery } from "@mui/material";
 
-import lightLogo from "../assets/banner-light.png";
-import darkLogo from "../assets/banner-dark.png";
+import lightLogo from "../assets/banner-light.webp";
+import darkLogo from "../assets/banner-dark.webp";
 
 function Header() {
   const prefersDarkMode = useMediaQuery(
