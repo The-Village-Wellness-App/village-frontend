@@ -1,5 +1,5 @@
 
-name: Frontend CI and CD
+name: Frontend CI/CD
 
 on:
   pull_request:
