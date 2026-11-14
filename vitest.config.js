@@ -28,5 +28,18 @@ export default defineConfig({
     restoreMocks: true,
     testTimeout: 15000,
     hookTimeout: 15000,
+
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html', 'lcov'],
+      include: ['src/**/*.{js,jsx}'],
+      exclude: [
+        'src/__tests__/**',
+        'src/test/**',
+        'src/**/*.test.{js,jsx}',
+        'src/**/*.spec.{js,jsx}',
+      ],
+      reportsDirectory: './coverage',
+    },
   },
 });

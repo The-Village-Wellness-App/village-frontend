@@ -1,6 +1,5 @@
-
 name: Frontend Validation
-description: Install dependencies, lint, test and build the Village Wellness frontend
+description: Install dependencies, lint, test with coverage and build the Village Wellness frontend
 
 inputs:
   node-version:
@@ -37,11 +36,11 @@ runs:
         set -o pipefail
         npm run lint 2>&1 | tee logs/eslint.log
 
-    - name: Run Vitest
+    - name: Run Vitest with coverage
       shell: bash
       run: |
         set -o pipefail
-        npm run test -- \
+        npm run test:coverage -- \
           --reporter=default \
           --reporter=junit \
           --outputFile.junit=test-results/junit.xml \
