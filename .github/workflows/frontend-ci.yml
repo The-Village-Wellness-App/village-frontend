@@ -1,5 +1,4 @@
-
-name: Frontend CI/CD
+name: Frontend CI and CD
 
 on:
   pull_request:
@@ -23,14 +22,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
 
-      # CONTINUOUS INTEGRATION
       - name: Run frontend validation
         uses: ./.github/actions/frontend-validation
         with:
           node-version: "22"
           api-url: ${{ vars.VITE_API_URL }}
 
-      # ARTEFACT RETENTION
       - name: Upload frontend CI artefacts
         if: always()
         uses: actions/upload-artifact@v7
@@ -39,11 +36,11 @@ jobs:
           path: |
             logs/
             test-results/
+            coverage/
             dist/
           if-no-files-found: warn
           retention-days: 30
 
-      # CONTINUOUS DEPLOYMENT
       - name: Deploy to Netlify
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: npx --yes netlify-cli deploy --prod --no-build --dir=dist --site="$NETLIFY_SITE_ID" --auth="$NETLIFY_AUTH_TOKEN"

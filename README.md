@@ -278,13 +278,41 @@ devDependencies
 
 ## Testing
 
-Vitest is used to create a test suite that validates:
+The frontend uses **Vitest** as its test runner and **React Testing Library** to test component rendering and user interactions. Tests run in a simulated browser environment using JSDOM.
 
-- The API
-- Web pages
-- The application file
-- Navbar & Footer
-- Theme tooling
+The test suite currently contains 11 test files and 48 test cases.
+
+### Test coverage
+
+| Test file | Coverage |
+| --- | --- |
+| `api.test.js` | API request configuration, authentication headers, error handling, and authentication, event, mood and pain API helpers |
+| `App.test.jsx` | Application routing and home/login page rendering |
+| `event-page.test.jsx` | Event page rendering, empty state, required-field validation and category options |
+| `home-page.test.jsx` | Home page rendering |
+| `login-page.test.jsx` | Login, registration and password recovery form navigation and validation |
+| `LoginForm.test.jsx` | Login form rendering, input interaction and navigation callbacks |
+| `mood-page.test.jsx` | Mood page rendering, loading and empty states, slider defaults and save button |
+| `pain-page.test.jsx` | Pain page rendering, empty state, slider defaults and location options |
+| `Navbar.test.jsx` | Navigation links and welcome text |
+| `Footer.test.jsx` | Author links and dynamic copyright year |
+| `ThemeContext.test.jsx` | Default theme and theme switching |
+
+### Testing approach
+
+Tests use mocked API responses and browser storage to isolate frontend behaviour from the backend. This allows components, API helpers and user interactions to be tested without requiring a running backend or database.
+
+The current suite focuses on unit and component-level testing. It does not perform end-to-end browser testing or verify complete requests against the live backend.
+
+### Running tests
+
+Run the complete test suite:
+
+```bash
+npm test
+```
+
+Tests are also executed automatically through the frontend GitHub Actions CI pipeline.
 
 ## Installation
 
