@@ -21,45 +21,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: 22
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Prepare artefact directories
-        run: |
-          mkdir -p logs
-          mkdir -p test-results
-
       # CONTINUOUS INTEGRATION
-
-      - name: Run ESLint
-        run: |
-          set -o pipefail
-          npm run lint 2>&1 | tee logs/eslint.log
-
-      - name: Run Vitest
-        run: |
-          set -o pipefail
-          npm run test -- \
-            --reporter=default \
-            --reporter=junit \
-            --outputFile.junit=test-results/junit.xml \
-            2>&1 | tee logs/vitest.log
-
-      - name: Build production frontend
-        env:
-          VITE_API_URL: ${{ vars.VITE_API_URL }}
-        run: |
-          set -o pipefail
-          npm run build 2>&1 | tee logs/build.log
+      - name: Run frontend validation
+        uses: ./.github/actions/frontend-validation
+        with:
+          node-version: "22"
+          api-url: ${{ vars.VITE_API_URL }}
 
       # ARTEFACT RETENTION
-
       - name: Upload frontend CI artefacts
         if: always()
         uses: actions/upload-artifact@v7
@@ -73,7 +42,6 @@ jobs:
           retention-days: 30
 
       # CONTINUOUS DEPLOYMENT
-
       - name: Deploy to Netlify
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: npx --yes netlify-cli deploy --prod --no-build --dir=dist --site="$NETLIFY_SITE_ID" --auth="$NETLIFY_AUTH_TOKEN"
