@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   frontend-ci:
-    name: Lint, Test, Build and Deploy
+    name: Frontend CI/CD Pipeline
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
