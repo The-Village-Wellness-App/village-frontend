@@ -1,16 +1,15 @@
 const API_URL = import.meta.env.VITE_API_URL;
 
 export const fetchData = async (endpoint, options = {}) => {
-  // this is to connect the front end to the back end
   const token = localStorage.getItem("authToken");
 
   const response = await fetch(`${API_URL}${endpoint}`, {
+    ...options,
     headers: {
       "Content-Type": "application/json",
       ...(token && { Authorization: `Bearer ${token}` }),
       ...options.headers,
     },
-    ...options,
   });
 
   if (!response.ok) {
@@ -19,6 +18,7 @@ export const fetchData = async (endpoint, options = {}) => {
   }
 
   const contentType = response.headers.get("content-type") || "";
+
   if (contentType.includes("application/json")) {
     return response.json();
   }

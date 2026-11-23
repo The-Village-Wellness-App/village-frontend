@@ -1,527 +1,434 @@
-import { useState, useEffect } from 'react';
+
+import { useEffect, useState } from "react";
 import {
+  Alert,
   Box,
-  Container,
-  Typography,
-  TextField,
-  Select,
-  MenuItem,
+  Button,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
   FormControl,
   InputLabel,
-  Button,
-  Alert,
-  Card,
-  CardContent,
-  CircularProgress,
+  MenuItem,
+  Select,
   Slider,
-  Stack,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  IconButton,
-} from '@mui/material';
-import dayjs from 'dayjs';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { fetchData, createPain, updatePain, deletePain } from '../services/api';
+  TextField,
+  Typography,
+} from "@mui/material";
+import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
+import dayjs from "dayjs";
 
-const formatLocation = (location) => {
-  return location
-    .split('_')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
-};
+import {
+  fetchData,
+  createPain,
+  updatePain,
+  deletePain,
+} from "../services/api";
+
+const painLocations = [
+  { value: "all_over", label: "All over" },
+  { value: "head", label: "Head" },
+  { value: "neck", label: "Neck" },
+  { value: "throat", label: "Throat" },
+  { value: "shoulders", label: "Shoulders" },
+  { value: "back", label: "Back" },
+  { value: "chest", label: "Chest" },
+  { value: "abdomen", label: "Abdomen" },
+  { value: "arms", label: "Arms" },
+  { value: "hands", label: "Hands" },
+  { value: "pelvic_region", label: "Pelvic region" },
+  { value: "upper_legs", label: "Upper legs" },
+  { value: "lower_legs", label: "Lower legs" },
+  { value: "feet", label: "Feet" },
+];
 
 function Pain() {
   const [pains, setPains] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [submitError, setSubmitError] = useState(null);
+  const [error, setError] = useState("");
+  const [submitError, setSubmitError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const [editingPain, setEditingPain] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+
   const [formData, setFormData] = useState({
-    value: 0,
-    location: 'head',
-    optional_text: '',
+    value: 1,
+    location: "",
+    optional_text: "",
     occurred_at: dayjs(),
   });
 
-  const [editingId, setEditingId] = useState(null);
-  const [editFormData, setEditFormData] = useState({
-    value: 0,
-    location: 'head',
-    optional_text: '',
-    occurred_at: dayjs(),
-  });
-  const [isEditSubmitting, setIsEditSubmitting] = useState(false);
-  const [editError, setEditError] = useState(null);
+  // Load pain records belonging to the logged-in user
+  const loadPains = async () => {
+    try {
+      setLoading(true);
+      setError("");
 
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [painToDelete, setPainToDelete] = useState(null);
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  const VALID_LOCATIONS = [
-    'all_over',
-    'head',
-    'neck',
-    'throat',
-    'shoulders',
-    'back',
-    'chest',
-    'abdomen',
-    'arms',
-    'hands',
-    'pelvic_region',
-    'upper_legs',
-    'lower_legs',
-    'feet',
-  ];
+      const response = await fetchData("/pains");
+      setPains(response?.data || []);
+    } catch (err) {
+      setError(err.message || "Unable to load pain records.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-  let isMounted = true;
+    loadPains();
+  }, []);
 
-  const fetchPains = async () => {
-    try {
-      const data = await fetchData('/pains');
+  // Reset the form
+  const resetForm = () => {
+    setFormData({
+      value: 1,
+      location: "",
+      optional_text: "",
+      occurred_at: dayjs(),
+    });
 
-      if (isMounted) {
-        setPains(data?.data || []);
-      }
-    } catch (err) {
-      if (isMounted) {
-        setError(err.message);
-      }
-    } finally {
-      if (isMounted) {
-        setLoading(false);
-      }
-    }
+    setEditingPain(null);
+    setSubmitError("");
   };
 
-  // Grab the current pain list when the page opens.
-  fetchPains();
-
-  return () => {
-    isMounted = false;
-  };
-}, []);
-  
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
+  // Update form fields
+  const handleChange = (field, value) => {
+    setFormData((previous) => ({
+      ...previous,
+      [field]: value,
     }));
   };
 
-  const handleSliderChange = (name, value) => {
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
+  // Create or update a pain record
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setSubmitError("");
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setSubmitError(null);
-
-    // keep the form simple and make sure the value is in range
-
-    const parsedValue = Number(formData.value);
-
-    if (formData.value === '' || Number.isNaN(parsedValue)) {
-      setSubmitError('Pain value is required');
+    if (
+      !Number.isInteger(Number(formData.value)) ||
+      Number(formData.value) < 1 ||
+      Number(formData.value) > 10
+    ) {
+      setSubmitError("Please select a pain level between 1 and 10.");
       return;
     }
 
-    if (parsedValue < 0 || parsedValue > 10) {
-      setSubmitError('Pain value must be between 0 and 10');
+    if (!formData.location) {
+      setSubmitError("Please select a pain location.");
       return;
     }
 
-    if (!VALID_LOCATIONS.includes(formData.location)) {
-      setSubmitError('Invalid pain location selected');
+    if (!formData.occurred_at || !dayjs(formData.occurred_at).isValid()) {
+      setSubmitError("Please select a valid date and time.");
       return;
     }
+
+    const painData = {
+      value: Number(formData.value),
+      location: formData.location,
+      optional_text: formData.optional_text.trim(),
+      occurred_at: dayjs(formData.occurred_at).toISOString(),
+    };
 
     try {
       setIsSubmitting(true);
-      const response = await createPain({
-        value: parsedValue,
-        location: formData.location,
-        optional_text: formData.optional_text.trim() || '',
-        occurred_at: formData.occurred_at.toISOString(),
-      });
 
-      // put the newest pain entry at the top so it feels live
-      setPains((prev) => [response?.data || response, ...prev]);
-      setFormData({
-        value: 0,
-        location: 'head',
-        optional_text: '',
-        occurred_at: dayjs(),
-      });
+      if (editingPain) {
+        await updatePain(editingPain._id, painData);
+      } else {
+        await createPain(painData);
+      }
+
+      resetForm();
+      await loadPains();
     } catch (err) {
-      setSubmitError(err.message);
+      setSubmitError(err.message || "Unable to save pain record.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleEditStart = (pain) => {
-    setEditingId(pain._id);
-    setEditFormData({
-      value: Number(pain.value ?? 0),
-      location: pain.location,
-      optional_text: pain.optional_text || '',
+  // Populate form when editing a record
+  const handleEdit = (pain) => {
+    setEditingPain(pain);
+
+    setFormData({
+      value: Number(pain.value),
+      location: pain.location || "",
+      optional_text: pain.optional_text || "",
       occurred_at: dayjs(pain.occurred_at),
     });
-    setEditError(null);
+
+    setSubmitError("");
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleEditCancel = () => {
-    setEditingId(null);
-    setEditFormData({
-      value: 0,
-      location: 'head',
-      optional_text: '',
-      occurred_at: dayjs(),
-    });
-    setEditError(null);
-  };
-
-  const handleEditChange = (e) => {
-    const { name, value } = e.target;
-    setEditFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  const handleEditSliderChange = (name, value) => {
-    setEditFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  const handleEditSubmit = async (e) => {
-    e.preventDefault();
-    setEditError(null);
-
-    const parsedValue = Number(editFormData.value);
-
-    if (editFormData.value === '' || Number.isNaN(parsedValue)) {
-      setEditError('Pain value is required');
-      return;
-    }
-
-    if (parsedValue < 0 || parsedValue > 10) {
-      setEditError('Pain value must be between 0 and 10');
-      return;
-    }
-
-    if (!VALID_LOCATIONS.includes(editFormData.location)) {
-      setEditError('Invalid pain location selected');
-      return;
-    }
+  // Delete a pain record
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
 
     try {
-      setIsEditSubmitting(true);
-      const response = await updatePain(editingId, {
-        value: parsedValue,
-        location: editFormData.location,
-        optional_text: editFormData.optional_text.trim() || '',
-        occurred_at: editFormData.occurred_at.toISOString(),
-      });
-
-      // swap in the updated entry without reloading the whole page
-      setPains((prev) => prev.map((pain) => (pain._id === editingId ? response?.data || response : pain)));
-      handleEditCancel();
+      await deletePain(deleteTarget._id);
+      setDeleteTarget(null);
+      await loadPains();
     } catch (err) {
-      setEditError(err.message);
-    } finally {
-      setIsEditSubmitting(false);
+      setError(err.message || "Unable to delete pain record.");
+      setDeleteTarget(null);
     }
   };
 
-  const handleDeleteStart = (pain) => {
-    setPainToDelete(pain);
-    setDeleteConfirmOpen(true);
+  // Display a descriptive pain level
+  const getPainLabel = (value) => {
+    if (value <= 3) return "Mild";
+    if (value <= 6) return "Moderate";
+    return "Severe";
   };
 
-  const handleDeleteConfirm = async () => {
-    try {
-      setIsDeleting(true);
-      await deletePain(painToDelete._id);
-      // remove it from the list right away after the delete goes through
-      setPains((prev) => prev.filter((pain) => pain._id !== painToDelete._id));
-      setDeleteConfirmOpen(false);
-      setPainToDelete(null);
-    } catch (err) {
-      setDeleteConfirmOpen(false);
-      setPainToDelete(null);
-      setError('Failed to delete pain entry: ' + err.message);
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
-  const handleDeleteCancel = () => {
-    setDeleteConfirmOpen(false);
-    setPainToDelete(null);
-  };
-
-  if (loading) {
+  // Display readable location names
+  const getLocationLabel = (location) => {
     return (
-      <Container maxWidth="md" sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
-        <CircularProgress />
-      </Container>
+      painLocations.find((item) => item.value === location)?.label ||
+      location
     );
-  }
-
-  if (error) {
-    return (
-      <Container maxWidth="md" sx={{ py: 4 }}>
-        <Alert severity="error">Error: {error}</Alert>
-      </Container>
-    );
-  }
+  };
 
   return (
-    <Container maxWidth="md" sx={{ py: 4 }}>
-      <Typography variant="h3" component="h1" gutterBottom sx={{ mb: 4, fontWeight: 'bold' }}>
-        Pain Tracking
+    <Box sx={{ maxWidth: 900, mx: "auto", p: 3 }}>
+      <Typography variant="h4" gutterBottom>
+        Pain Tracker
       </Typography>
 
-      <Card sx={{ mb: 4 }}>
-        <CardContent>
-          <Typography variant="h5" component="h2" gutterBottom sx={{ mb: 3 }}>
-            Add Pain Entry
-          </Typography>
+      <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+        Record and monitor your pain levels over time.
+      </Typography>
 
-          {submitError && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {submitError}
-            </Alert>
-          )}
-
-          <Box component="form" onSubmit={handleSubmit}>
-            <Stack spacing={2}>
-              <Box>
-                <Typography gutterBottom>
-                  Pain Value: {formData.value}/10
-                </Typography>
-                <Slider
-                  value={Number(formData.value)}
-                  onChange={(_, newValue) => handleSliderChange('value', newValue)}
-                  valueLabelDisplay="auto"
-                  step={1}
-                  marks
-                  min={0}
-                  max={10}
-                />
-              </Box>
-
-              <FormControl fullWidth>
-                <InputLabel id="pain-location-label">Location</InputLabel>
-                <Select
-                  labelId="pain-location-label"
-                  id="location"
-                  name="location"
-                  value={formData.location}
-                  onChange={handleInputChange}
-                  label="Location"
-                >
-                  {VALID_LOCATIONS.map((location) => (
-                    <MenuItem key={location} value={location}>
-                      {formatLocation(location)}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-
-              <TextField
-                fullWidth
-                id="optional_text"
-                label="Optional Notes"
-                name="optional_text"
-                value={formData.optional_text}
-                onChange={handleInputChange}
-                placeholder="Add any extra notes"
-                multiline
-                rows={4}
-              />
-
-              <LocalizationProvider dateAdapter={AdapterDayjs}>
-                <DatePicker
-                  label="Date"
-                  value={formData.occurred_at}
-                  onChange={(newValue) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      occurred_at: newValue,
-                    }))
-                  }
-                  format="DD/MM/YYYY"
-                  slotProps={{ textField: { fullWidth: true } }}
-                />
-              </LocalizationProvider>
-
-              <Button type="submit" variant="contained" color="success" size="large" disabled={isSubmitting} sx={{ mt: 1 }}>
-                {isSubmitting ? 'Saving...' : 'Save Pain Entry'}
-              </Button>
-            </Stack>
-          </Box>
-        </CardContent>
-      </Card>
-
-      <Box>
-        <Typography variant="h5" component="h2" gutterBottom sx={{ mb: 3 }}>
-          Your Pain Entries
+      {/* Pain entry form */}
+      <Box
+        component="form"
+        onSubmit={handleSubmit}
+        sx={{
+          p: 3,
+          mb: 4,
+          border: 1,
+          borderColor: "divider",
+          borderRadius: 2,
+        }}
+      >
+        <Typography variant="h6" gutterBottom>
+          {editingPain ? "Update Pain Record" : "Record Pain"}
         </Typography>
 
-        {pains.length === 0 ? (
-          <Alert severity="info">No pain entries yet. Add one above.</Alert>
-        ) : (
-          <Stack spacing={2}>
-            {pains.map((pain) => (
-              <Card key={pain._id}>
-                <CardContent>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <Box sx={{ flex: 1 }}>
-                      <Typography variant="h6" component="h3" gutterBottom>
-                        Pain Level: {pain.value}/10
-                      </Typography>
-                      <Typography variant="body2" color="textSecondary" gutterBottom>
-                        <strong>Location:</strong> {formatLocation(pain.location)}
-                      </Typography>
-                      <Typography variant="body2" color="textSecondary" gutterBottom>
-                        <strong>Date:</strong> {dayjs(pain.occurred_at).format('DD/MM/YYYY')}
-                      </Typography>
-                      {pain.optional_text && (
-                        <Typography variant="body2" sx={{ mt: 1 }}>
-                          <strong>Notes:</strong> {pain.optional_text}
-                        </Typography>
-                      )}
-                    </Box>
-                    <Box sx={{ ml: 2 }}>
-                      <IconButton size="small" onClick={() => handleEditStart(pain)} color="primary" title="Edit pain entry">
-                        <EditIcon />
-                      </IconButton>
-                      <IconButton size="small" onClick={() => handleDeleteStart(pain)} color="error" title="Delete pain entry">
-                        <DeleteIcon />
-                      </IconButton>
-                    </Box>
-                  </Box>
-                </CardContent>
-              </Card>
+        {/* Pain level */}
+        <Typography gutterBottom>
+          Pain level: <strong>{formData.value}/10</strong>
+        </Typography>
+
+        <Slider
+          value={Number(formData.value)}
+          min={1}
+          max={10}
+          step={1}
+          marks
+          valueLabelDisplay="auto"
+          onChange={(_, value) => handleChange("value", value)}
+          aria-label="Pain level"
+          sx={{ mb: 1 }}
+        />
+
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+          1 = Mild pain · 10 = Worst pain
+        </Typography>
+
+        {/* Pain location */}
+        <FormControl fullWidth sx={{ mb: 3 }} required>
+          <InputLabel id="pain-location-label">
+            Pain location
+          </InputLabel>
+
+          <Select
+            labelId="pain-location-label"
+            id="pain-location"
+            value={formData.location}
+            label="Pain location"
+            onChange={(event) =>
+              handleChange("location", event.target.value)
+            }
+          >
+            {painLocations.map((location) => (
+              <MenuItem key={location.value} value={location.value}>
+                {location.label}
+              </MenuItem>
             ))}
-          </Stack>
+          </Select>
+        </FormControl>
+
+        {/* Optional notes */}
+        <TextField
+          fullWidth
+          multiline
+          minRows={3}
+          label="Additional notes (optional)"
+          value={formData.optional_text}
+          onChange={(event) =>
+            handleChange("optional_text", event.target.value)
+          }
+          sx={{ mb: 3 }}
+        />
+
+        {/* Date and time */}
+        <DateTimePicker
+          label="Date and time"
+          value={formData.occurred_at}
+          onChange={(value) => handleChange("occurred_at", value)}
+          slotProps={{
+            textField: {
+              fullWidth: true,
+              sx: { mb: 3 },
+            },
+          }}
+        />
+
+        {submitError && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {submitError}
+          </Alert>
         )}
+
+        <Box sx={{ display: "flex", gap: 2 }}>
+          <Button
+            type="submit"
+            variant="contained"
+            disabled={isSubmitting}
+          >
+            {isSubmitting
+              ? "Saving..."
+              : editingPain
+                ? "Update Record"
+                : "Save Record"}
+          </Button>
+
+          {editingPain && (
+            <Button
+              type="button"
+              variant="outlined"
+              onClick={resetForm}
+            >
+              Cancel
+            </Button>
+          )}
+        </Box>
       </Box>
 
-      <Dialog open={editingId !== null} onClose={handleEditCancel} maxWidth="sm" fullWidth>
-        <DialogTitle>Edit Pain Entry</DialogTitle>
-        <DialogContent sx={{ pt: 2 }}>
-          {editError && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {editError}
-            </Alert>
-          )}
-          <Box component="form" sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <Box>
-              <Typography gutterBottom>
-                Pain Value: {editFormData.value}/10
-              </Typography>
-              <Slider
-                value={Number(editFormData.value)}
-                onChange={(_, newValue) => handleEditSliderChange('value', newValue)}
-                valueLabelDisplay="auto"
-                step={1}
-                marks
-                min={0}
-                max={10}
-              />
-            </Box>
+      {/* Pain history */}
+      <Typography variant="h5" gutterBottom>
+        Pain History
+      </Typography>
 
-            <FormControl fullWidth>
-              <InputLabel id="edit-pain-location-label">Location</InputLabel>
-              <Select
-                labelId="edit-pain-location-label"
-                id="edit-location"
-                name="location"
-                value={editFormData.location}
-                onChange={handleEditChange}
-                label="Location"
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
+
+      {loading ? (
+        <Box sx={{ display: "flex", justifyContent: "center", p: 4 }}>
+          <CircularProgress />
+        </Box>
+      ) : pains.length === 0 ? (
+        <Typography color="text.secondary">
+          No pain records yet. Add your first record above.
+        </Typography>
+      ) : (
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          {pains.map((pain) => (
+            <Box
+              key={pain._id}
+              sx={{
+                p: 2,
+                border: 1,
+                borderColor: "divider",
+                borderRadius: 2,
+              }}
+            >
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "flex-start",
+                  flexWrap: "wrap",
+                  gap: 2,
+                }}
               >
-                {VALID_LOCATIONS.map((location) => (
-                  <MenuItem key={location} value={location}>
-                    {formatLocation(location)}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+                <Box>
+                  <Typography variant="h6">
+                    {pain.value}/10 — {getPainLabel(Number(pain.value))}
+                  </Typography>
 
-            <TextField
-              fullWidth
-              id="edit-optional_text"
-              label="Optional Notes"
-              name="optional_text"
-              value={editFormData.optional_text}
-              onChange={handleEditChange}
-              multiline
-              rows={4}
-            />
+                  <Typography variant="body2" color="text.secondary">
+                    {getLocationLabel(pain.location)}
+                  </Typography>
 
-            <LocalizationProvider dateAdapter={AdapterDayjs}>
-              <DatePicker
-                label="Date"
-                value={editFormData.occurred_at}
-                onChange={(newValue) =>
-                  setEditFormData((prev) => ({
-                    ...prev,
-                    occurred_at: newValue,
-                  }))
-                }
-                format="DD/MM/YYYY"
-                slotProps={{ textField: { fullWidth: true } }}
-              />
-            </LocalizationProvider>
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleEditCancel}>Cancel</Button>
-          <Button onClick={handleEditSubmit} variant="contained" color="primary" disabled={isEditSubmitting}>
-            {isEditSubmitting ? 'Updating...' : 'Update'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+                  <Typography variant="body2" color="text.secondary">
+                    {dayjs(pain.occurred_at).format("DD MMM YYYY, h:mm A")}
+                  </Typography>
+                </Box>
 
+                <Box sx={{ display: "flex", gap: 1 }}>
+                  <Button
+                    size="small"
+                    onClick={() => handleEdit(pain)}
+                  >
+                    Edit
+                  </Button>
+
+                  <Button
+                    size="small"
+                    color="error"
+                    onClick={() => setDeleteTarget(pain)}
+                  >
+                    Delete
+                  </Button>
+                </Box>
+              </Box>
+
+              {pain.optional_text && (
+                <Typography sx={{ mt: 2 }}>
+                  {pain.optional_text}
+                </Typography>
+              )}
+            </Box>
+          ))}
+        </Box>
+      )}
+
+      {/* Delete confirmation */}
       <Dialog
-        open={deleteConfirmOpen}
-        onClose={handleDeleteCancel}
-        aria-labelledby="alert-dialog-title"
-        aria-describedby="alert-dialog-description"
+        open={Boolean(deleteTarget)}
+        onClose={() => setDeleteTarget(null)}
       >
-        <DialogTitle id="alert-dialog-title">Delete Pain Entry?</DialogTitle>
+        <DialogTitle>Delete pain record?</DialogTitle>
+
         <DialogContent>
-          <Typography id="alert-dialog-description">
-            Are you sure you want to delete this pain entry? This action cannot be undone.
-          </Typography>
+          <DialogContentText>
+            Are you sure you want to delete this pain record? This action
+            cannot be undone.
+          </DialogContentText>
         </DialogContent>
+
         <DialogActions>
-          <Button onClick={handleDeleteCancel}>Cancel</Button>
-          <Button onClick={handleDeleteConfirm} variant="contained" color="error" disabled={isDeleting}>
-            {isDeleting ? 'Deleting...' : 'Delete'}
+          <Button onClick={() => setDeleteTarget(null)}>
+            Cancel
+          </Button>
+
+          <Button color="error" onClick={handleDelete}>
+            Delete
           </Button>
         </DialogActions>
       </Dialog>
-    </Container>
+    </Box>
   );
 }
 
