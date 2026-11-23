@@ -3,6 +3,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { BrowserRouter } from 'react-router-dom';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+
 import Pain from '../pages/pain-page';
 
 beforeEach(() => {
@@ -10,8 +13,12 @@ beforeEach(() => {
   globalThis.fetch = vi.fn();
 });
 
-const renderWithRouter = (ui) => render(
-  <BrowserRouter>{ui}</BrowserRouter>,
+const renderWithProviders = (ui) => render(
+  <BrowserRouter>
+    <LocalizationProvider dateAdapter={AdapterDayjs}>
+      {ui}
+    </LocalizationProvider>
+  </BrowserRouter>,
 );
 
 const mockEmptyPainsResponse = () => {
@@ -26,7 +33,7 @@ describe('PainPage', () => {
   it('renders the pain tracking heading', async () => {
     mockEmptyPainsResponse();
 
-    renderWithRouter(<Pain />);
+    renderWithProviders(<Pain />);
 
     expect(
       await screen.findByRole('heading', { name: 'Pain Tracking' }),
@@ -36,25 +43,25 @@ describe('PainPage', () => {
   it('shows a message when there are no pain entries', async () => {
     mockEmptyPainsResponse();
 
-    renderWithRouter(<Pain />);
+    renderWithProviders(<Pain />);
 
     expect(
       await screen.findByText('No pain entries yet. Add one above.'),
     ).toBeTruthy();
   });
 
-  it('starts the pain slider at 0', async () => {
+  it('starts the pain slider at 1', async () => {
     mockEmptyPainsResponse();
 
-    renderWithRouter(<Pain />);
+    renderWithProviders(<Pain />);
 
-    expect(await screen.findByText('Pain Value: 0/10')).toBeTruthy();
+    expect(await screen.findByText('Pain Value: 1/10')).toBeTruthy();
 
     const slider = screen.getByRole('slider');
 
-    expect(slider.getAttribute('aria-valuemin')).toBe('0');
+    expect(slider.getAttribute('aria-valuemin')).toBe('1');
     expect(slider.getAttribute('aria-valuemax')).toBe('10');
-    expect(slider.getAttribute('aria-valuenow')).toBe('0');
+    expect(slider.getAttribute('aria-valuenow')).toBe('1');
   });
 
   it('renders the location select with its available options', async () => {
@@ -62,7 +69,7 @@ describe('PainPage', () => {
 
     const user = userEvent.setup();
 
-    renderWithRouter(<Pain />);
+    renderWithProviders(<Pain />);
 
     const select = await screen.findByRole('combobox', {
       name: 'Location',
