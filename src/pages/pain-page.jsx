@@ -78,7 +78,11 @@ function Pain() {
   };
 
   useEffect(() => {
-    loadPains();
+    const fetchPains = async () => {
+      await loadPains();
+    };
+
+    fetchPains();
   }, []);
 
   // Reset the form
