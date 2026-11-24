@@ -474,6 +474,10 @@ The reusable frontend validation action is located at:
 .github/actions/frontend-validation/action.yml
 ```
 
+![Successful Workflow](src/assets/frontend-workflow.png)
+
+![Successful Deployment to Netlify](src/assets/deploy-netlify.png)
+
 ### Continuous Integration
 
 The frontend CI workflow runs on:
