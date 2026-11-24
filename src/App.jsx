@@ -4,6 +4,7 @@ import { Routes, Route } from "react-router-dom";
 
 import MainLayout from "./layouts/main-layout";
 import AuthLayout from "./layouts/auth-layout";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 // Lazy-loaded page components
 const Home = lazy(() => import("./pages/home-page"));
@@ -25,10 +26,14 @@ function App() {
         {/* Main Application Routes */}
         <Route element={<MainLayout />}>
           <Route path="/" element={<Home />} />
-          <Route path="/mood" element={<Mood />} />
-          <Route path="/pain" element={<Pain />} />
-          <Route path="/event" element={<Event />} />
-          <Route path="/graphs" element={<Graphs />} />
+
+          {/* Protected Routes */}
+          <Route element={<ProtectedRoute />}>
+            <Route path="/mood" element={<Mood />} />
+            <Route path="/pain" element={<Pain />} />
+            <Route path="/event" element={<Event />} />
+            <Route path="/graphs" element={<Graphs />} />
+          </Route>
         </Route>
       </Routes>
     </Suspense>
