@@ -1,9 +1,10 @@
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   Alert,
   Box,
+  Button,
   Checkbox,
   CircularProgress,
   Divider,
@@ -17,8 +18,13 @@ import {
   Typography,
 } from "@mui/material";
 
+import DownloadIcon from "@mui/icons-material/Download";
+
 import { LineChart } from "@mui/x-charts/LineChart";
 import { BarChart } from "@mui/x-charts/BarChart";
+
+import html2canvas from "html2canvas";
+import { jsPDF } from "jspdf";
 
 import { fetchData } from "../services/api";
 
@@ -39,14 +45,12 @@ const formatDisplayDate = (date) =>
     year: "numeric",
   });
 
-// Calculate the daily average for Mood or Pain.
+// Calculate daily averages.
 const calculateDailyAverages = (records, dateLabels, selectedDateKeys) => {
   return dateLabels.map((date) => {
     const dateKey = getDateKey(date);
 
-    if (!selectedDateKeys.includes(dateKey)) {
-      return null;
-    }
+    if (!selectedDateKeys.includes(dateKey)) return null;
 
     const dailyRecords = records.filter((record) => {
       if (!record.occurred_at) return false;
@@ -62,9 +66,7 @@ const calculateDailyAverages = (records, dateLabels, selectedDateKeys) => {
       );
     });
 
-    if (dailyRecords.length === 0) {
-      return null;
-    }
+    if (dailyRecords.length === 0) return null;
 
     const total = dailyRecords.reduce(
       (sum, record) => sum + record.value,
@@ -75,7 +77,7 @@ const calculateDailyAverages = (records, dateLabels, selectedDateKeys) => {
   });
 };
 
-// Count how many times each rating from 1–10 was recorded.
+// Count rating frequencies from 1–10.
 const calculateRatingFrequency = (records, selectedDateKeys) => {
   return Array.from({ length: 10 }, (_, index) => {
     const rating = index + 1;
@@ -94,6 +96,87 @@ const calculateRatingFrequency = (records, selectedDateKeys) => {
   });
 };
 
+// Capture an element as a high-resolution canvas.
+const captureElement = async (element) => {
+  return html2canvas(element, {
+    scale: 2,
+    backgroundColor: "#ffffff",
+    useCORS: true,
+    logging: false,
+    windowWidth: element.scrollWidth,
+  });
+};
+
+// Add a canvas to a PDF, creating extra pages if required.
+const addCanvasToPDF = (pdf, canvas, addNewPage = false) => {
+  const margin = 12;
+  const pageWidth = 210;
+  const pageHeight = 297;
+
+  const imageWidth = pageWidth - margin * 2;
+  const usablePageHeight = pageHeight - margin * 2;
+
+  const pixelsPerMm = canvas.width / imageWidth;
+  const sliceHeight = Math.floor(
+    usablePageHeight * pixelsPerMm
+  );
+
+  const totalPages = Math.ceil(canvas.height / sliceHeight);
+
+  for (let page = 0; page < totalPages; page += 1) {
+    if (addNewPage || page > 0) {
+      pdf.addPage();
+    }
+
+    const sourceY = page * sliceHeight;
+
+    const currentSliceHeight = Math.min(
+      sliceHeight,
+      canvas.height - sourceY
+    );
+
+    const pageCanvas = document.createElement("canvas");
+
+    pageCanvas.width = canvas.width;
+    pageCanvas.height = currentSliceHeight;
+
+    const context = pageCanvas.getContext("2d");
+
+    context.fillStyle = "#ffffff";
+    context.fillRect(
+      0,
+      0,
+      pageCanvas.width,
+      pageCanvas.height
+    );
+
+    context.drawImage(
+      canvas,
+      0,
+      sourceY,
+      canvas.width,
+      currentSliceHeight,
+      0,
+      0,
+      canvas.width,
+      currentSliceHeight
+    );
+
+    const imageData = pageCanvas.toDataURL("image/png");
+
+    const imageHeight = currentSliceHeight / pixelsPerMm;
+
+    pdf.addImage(
+      imageData,
+      "PNG",
+      margin,
+      margin,
+      imageWidth,
+      imageHeight
+    );
+  }
+};
+
 function GraphReportPage() {
   const [moods, setMoods] = useState([]);
   const [pains, setPains] = useState([]);
@@ -101,8 +184,6 @@ function GraphReportPage() {
 
   const [selectedMood, setSelectedMood] = useState(true);
   const [selectedPain, setSelectedPain] = useState(true);
-
-  // Events are hidden until the user selects the checkbox.
   const [selectedEvents, setSelectedEvents] = useState(false);
 
   const [timeRange, setTimeRange] = useState("7");
@@ -112,6 +193,14 @@ function GraphReportPage() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [pdfError, setPdfError] = useState("");
+  const [showPdfHeading, setShowPdfHeading] = useState(false);
+
+  // Separate references allow Events to start on a new PDF page.
+  const mainReportRef = useRef(null);
+  const eventReportRef = useRef(null);
 
   // Fetch Mood, Pain and Event records.
   useEffect(() => {
@@ -251,7 +340,7 @@ function GraphReportPage() {
     return series;
   }, [selectedMood, selectedPain, moodData, painData]);
 
-  // Histogram data: number of times each rating was recorded.
+  // Histogram data.
   const moodFrequencies = useMemo(
     () => calculateRatingFrequency(moods, selectedDateKeys),
     [moods, selectedDateKeys]
@@ -312,7 +401,6 @@ function GraphReportPage() {
 
   const noSelectedRatings = !selectedMood && !selectedPain;
 
-  // Allow Events to be displayed on their own in Line Chart mode.
   const showSelectionMessage =
     noSelectedRatings &&
     !(graphType === "line" && selectedEvents);
@@ -351,7 +439,7 @@ function GraphReportPage() {
     );
   }).length;
 
-  // Find the events for the date selected by clicking an Events bar.
+  // Find events for the selected date.
   const selectedEventsForDate = useMemo(() => {
     if (!selectedEventDate) return [];
 
@@ -381,10 +469,80 @@ function GraphReportPage() {
     }
   };
 
+  // Generate the PDF.
+  const handleDownloadPDF = async () => {
+    if (!mainReportRef.current) return;
+
+    try {
+      setPdfLoading(true);
+      setPdfError("");
+
+      // Temporarily display the PDF-only heading.
+      setShowPdfHeading(true);
+
+      // Wait for React and the charts to render.
+      await new Promise((resolve) => {
+        window.requestAnimationFrame(() => {
+          window.requestAnimationFrame(resolve);
+        });
+      });
+
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4",
+      });
+
+      // First page: report heading, selected ratings and summary.
+      const mainCanvas = await captureElement(mainReportRef.current);
+
+      addCanvasToPDF(pdf, mainCanvas);
+
+      // Events always begin on a new page.
+      if (
+        graphType === "line" &&
+        selectedEvents &&
+        eventReportRef.current
+      ) {
+        const eventCanvas = await captureElement(eventReportRef.current);
+
+        addCanvasToPDF(pdf, eventCanvas, true);
+      }
+
+      const today = new Date().toISOString().slice(0, 10);
+
+      pdf.save(`village-wellness-report-${today}.pdf`);
+    } catch (err) {
+      console.error("PDF generation failed:", err);
+
+      setPdfError(
+        "Unable to generate the PDF. Please try again."
+      );
+    } finally {
+      setShowPdfHeading(false);
+      setPdfLoading(false);
+    }
+  };
+
+  const reportGeneratedDate = new Date().toLocaleDateString(
+    "en-AU",
+    {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    }
+  );
+
+  const reportStartDate = formatDisplayDate(dateLabels[0]);
+  const reportEndDate = formatDisplayDate(
+    dateLabels[dateLabels.length - 1]
+  );
+
   return (
     <Box sx={{ p: { xs: 2, md: 3 } }}>
       <Grid container spacing={3}>
         {/* Graph options */}
+
         <Grid size={{ xs: 12, md: 3 }}>
           <Paper elevation={2} sx={{ p: 3, height: "100%" }}>
             <Typography variant="h6" gutterBottom>
@@ -395,6 +553,7 @@ function GraphReportPage() {
 
             <Stack spacing={3}>
               {/* Graph type */}
+
               <Box>
                 <Typography variant="subtitle1" fontWeight="bold">
                   Graph Type
@@ -430,6 +589,7 @@ function GraphReportPage() {
               <Divider />
 
               {/* Rating type */}
+
               <Box>
                 <Typography variant="subtitle1" fontWeight="bold">
                   Rating Type
@@ -487,6 +647,7 @@ function GraphReportPage() {
               <Divider />
 
               {/* Time range */}
+
               <Box>
                 <Typography variant="subtitle1" fontWeight="bold">
                   Time Range
@@ -518,117 +679,147 @@ function GraphReportPage() {
                   />
                 </RadioGroup>
               </Box>
+
+              <Divider />
+
+              {/* Download PDF */}
+
+              <Button
+                variant="contained"
+                fullWidth
+                startIcon={
+                  pdfLoading ? (
+                    <CircularProgress size={18} color="inherit" />
+                  ) : (
+                    <DownloadIcon />
+                  )
+                }
+                onClick={handleDownloadPDF}
+                disabled={loading || pdfLoading || Boolean(error)}
+              >
+                {pdfLoading ? "Generating PDF..." : "Download PDF"}
+              </Button>
+
+              {pdfError && (
+                <Alert severity="error">
+                  {pdfError}
+                </Alert>
+              )}
             </Stack>
           </Paper>
         </Grid>
 
-        {/* Graphs and reports */}
+        {/* Main report and charts */}
+
         <Grid size={{ xs: 12, md: 9 }}>
-          <Paper elevation={2} sx={{ p: 3 }}>
-            <Typography variant="h5" gutterBottom>
-              Graphs & Reports
-            </Typography>
+          <Box
+            ref={mainReportRef}
+            sx={{
+              backgroundColor: "#ffffff",
+              color: "#263F60",
+              p: 1,
+              borderRadius: 1,
+            }}
+          >
+            {/* This heading appears only during PDF generation. */}
 
-            <Typography variant="body2" color="text.secondary">
-              View your Mood, Pain and Event records over time.
-            </Typography>
+            {showPdfHeading && (
+              <Box sx={{ px: 2, py: 2 }}>
+                <Typography
+                  variant="h5"
+                  fontWeight="bold"
+                  sx={{ color: "#142B4A" }}
+                >
+                  The Village Wellness App
+                </Typography>
 
-            <Divider sx={{ my: 2 }} />
+                <Typography variant="h6" sx={{ mt: 0.5 }}>
+                  Wellness Report
+                </Typography>
 
-            {loading && (
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "center",
-                  py: 6,
-                }}
-              >
-                <CircularProgress />
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mt: 1 }}
+                >
+                  Reporting period: {reportStartDate} – {reportEndDate}
+                </Typography>
+
+                <Typography variant="body2" color="text.secondary">
+                  Generated: {reportGeneratedDate}
+                </Typography>
+
+                <Divider sx={{ mt: 2 }} />
               </Box>
             )}
 
-            {!loading && error && (
-              <Alert severity="error" sx={{ mb: 2 }}>
-                {error}
-              </Alert>
-            )}
+            <Paper
+              elevation={2}
+              sx={{
+                p: 3,
+                mb: 3,
+                boxShadow: "none",
+                border: "1px solid #E0E5EB",
+              }}
+            >
+              <Typography variant="h5" gutterBottom>
+                Graphs & Reports
+              </Typography>
 
-            {!loading && !error && showSelectionMessage && (
-              <Alert severity="info">
-                Please select Mood, Pain or Events to display a graph.
-              </Alert>
-            )}
+              <Typography variant="body2" color="text.secondary">
+                View your Mood, Pain and Event records over time.
+              </Typography>
 
-            {!loading &&
-              !error &&
-              !showSelectionMessage &&
-              !hasChartData && (
-                <Alert severity="info">
-                  No records are available for the selected options and time
-                  range.
+              <Divider sx={{ my: 2 }} />
+
+              {loading && (
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "center",
+                    py: 6,
+                  }}
+                >
+                  <CircularProgress />
+                </Box>
+              )}
+
+              {!loading && error && (
+                <Alert severity="error" sx={{ mb: 2 }}>
+                  {error}
                 </Alert>
               )}
 
-            {!loading && !error && hasChartData && (
-              <>
-                {/* Line chart */}
-                {graphType === "line" && (
-                  <Stack spacing={2}>
-                    {dailySeries.length > 0 && hasRatingData && (
-                      <>
-                        <Typography variant="h6">
-                          Daily Mood and Pain
-                        </Typography>
+              {!loading && !error && showSelectionMessage && (
+                <Alert severity="info">
+                  Please select Mood, Pain or Events to display a graph.
+                </Alert>
+              )}
 
-                        <LineChart
-                          height={320}
-                          xAxis={[
-                            {
-                              scaleType: "band",
-                              data: chartLabels,
-                              label: "Date",
-                            },
-                          ]}
-                          yAxis={[
-                            {
-                              min: 1,
-                              max: 10,
-                              label: "Rating (1–10)",
-                            },
-                          ]}
-                          series={dailySeries}
-                          margin={{
-                            left: 65,
-                            right: 30,
-                            top: 25,
-                            bottom: 45,
-                          }}
-                          grid={{ horizontal: true }}
-                        />
-                      </>
-                    )}
+              {!loading &&
+                !error &&
+                !showSelectionMessage &&
+                !hasChartData && (
+                  <Alert severity="info">
+                    No records are available for the selected options and
+                    time range.
+                  </Alert>
+                )}
 
-                    {selectedEvents && (
-                      <>
-                        {dailySeries.length > 0 && hasRatingData && (
-                          <Divider sx={{ my: 1 }} />
-                        )}
+              {!loading && !error && hasChartData && (
+                <>
+                  {/* Line chart: Mood and Pain only */}
 
-                        <Typography variant="h6">
-                          Events
-                        </Typography>
+                  {graphType === "line" && (
+                    <>
+                      {dailySeries.length > 0 && hasRatingData && (
+                        <>
+                          <Typography variant="h6">
+                            Daily Mood and Pain
+                          </Typography>
 
-                        <Typography
-                          variant="body2"
-                          color="text.secondary"
-                        >
-                          Select an orange bar to view the events recorded
-                          on that date.
-                        </Typography>
-
-                        {hasEventData ? (
-                          <BarChart
-                            height={190}
+                          <LineChart
+                            height={320}
                             xAxis={[
                               {
                                 scaleType: "band",
@@ -638,277 +829,369 @@ function GraphReportPage() {
                             ]}
                             yAxis={[
                               {
-                                min: 0,
-                                max: Math.max(1, ...eventCounts),
-                                label: "Number of events",
-                                valueFormatter: (value) => String(value),
+                                min: 1,
+                                max: 10,
+                                label: "Rating (1–10)",
                               },
                             ]}
-                            series={[
-                              {
-                                id: "events",
-                                label: "Events",
-                                data: eventCounts,
-                                color: "#F4A261",
-                                valueFormatter: (value) =>
-                                  `${value} ${
-                                    value === 1 ? "event" : "events"
-                                  }`,
-                              },
-                            ]}
-                            onItemClick={handleEventBarClick}
+                            series={dailySeries}
                             margin={{
                               left: 65,
                               right: 30,
-                              top: 15,
+                              top: 25,
                               bottom: 45,
                             }}
                             grid={{ horizontal: true }}
                           />
-                        ) : (
-                          <Alert severity="info">
-                            No events have been recorded during this time
-                            range.
-                          </Alert>
-                        )}
-                      </>
-                    )}
-                  </Stack>
-                )}
+                        </>
+                      )}
 
-                {/* Daily average bar chart */}
-                {graphType === "bar" && hasRatingData && (
-                  <>
-                    <Typography variant="h6" gutterBottom>
-                      Daily Average Ratings
-                    </Typography>
-
-                    <BarChart
-                      height={350}
-                      xAxis={[
-                        {
-                          scaleType: "band",
-                          data: chartLabels,
-                          label: "Date",
-                        },
-                      ]}
-                      yAxis={[
-                        {
-                          min: 1,
-                          max: 10,
-                          label: "Rating (1–10)",
-                        },
-                      ]}
-                      series={dailySeries}
-                      margin={{
-                        left: 65,
-                        right: 30,
-                        top: 25,
-                        bottom: 45,
-                      }}
-                      grid={{ horizontal: true }}
-                    />
-                  </>
-                )}
-
-                {/* Rating frequency histogram */}
-                {graphType === "histogram" && hasHistogramData && (
-                  <>
-                    <Typography variant="h6" gutterBottom>
-                      Rating Frequency
-                    </Typography>
-
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{ mb: 2 }}
-                    >
-                      Shows how many times each rating was recorded.
-                    </Typography>
-
-                    <BarChart
-                      height={350}
-                      xAxis={[
-                        {
-                          scaleType: "band",
-                          data: [
-                            "1",
-                            "2",
-                            "3",
-                            "4",
-                            "5",
-                            "6",
-                            "7",
-                            "8",
-                            "9",
-                            "10",
-                          ],
-                          label: "Rating",
-                        },
-                      ]}
-                      yAxis={[
-                        {
-                          min: 0,
-                          label: "Number of entries",
-                          valueFormatter: (value) => String(value),
-                        },
-                      ]}
-                      series={histogramSeries}
-                      margin={{
-                        left: 65,
-                        right: 30,
-                        top: 25,
-                        bottom: 45,
-                      }}
-                      grid={{ horizontal: true }}
-                    />
-                  </>
-                )}
-              </>
-            )}
-
-            {/* Event details */}
-            {!loading &&
-              !error &&
-              graphType === "line" &&
-              selectedEvents &&
-              hasEventData && (
-                <>
-                  <Divider sx={{ my: 3 }} />
-
-                  <Typography variant="h6" gutterBottom>
-                    Event Details
-                  </Typography>
-
-                  {!selectedEventDate && (
-                    <Typography color="text.secondary">
-                      Select an Events bar above to view the details for
-                      that date.
-                    </Typography>
+                      {selectedEvents && !hasRatingData && (
+                        <Typography color="text.secondary">
+                          Event records are shown in the Events section
+                          below.
+                        </Typography>
+                      )}
+                    </>
                   )}
 
-                  {selectedEventDate && (
+                  {/* Daily average bar chart */}
+
+                  {graphType === "bar" && hasRatingData && (
                     <>
-                      <Typography
-                        variant="subtitle1"
-                        fontWeight="bold"
-                        sx={{ mb: 2 }}
-                      >
-                        {formatDisplayDate(
-                          new Date(`${selectedEventDate}T00:00:00`)
-                        )}
+                      <Typography variant="h6" gutterBottom>
+                        Daily Average Ratings
                       </Typography>
 
-                      {selectedEventsForDate.length === 0 ? (
-                        <Typography color="text.secondary">
-                          No events found for this date.
-                        </Typography>
-                      ) : (
-                        <Stack spacing={2}>
-                          {selectedEventsForDate.map((event) => (
-                            <Paper
-                              key={event._id}
-                              variant="outlined"
-                              sx={{ p: 2 }}
-                            >
-                              <Typography
-                                variant="subtitle1"
-                                fontWeight="bold"
-                              >
-                                {event.title}
-                              </Typography>
+                      <BarChart
+                        height={350}
+                        xAxis={[
+                          {
+                            scaleType: "band",
+                            data: chartLabels,
+                            label: "Date",
+                          },
+                        ]}
+                        yAxis={[
+                          {
+                            min: 1,
+                            max: 10,
+                            label: "Rating (1–10)",
+                          },
+                        ]}
+                        series={dailySeries}
+                        margin={{
+                          left: 65,
+                          right: 30,
+                          top: 25,
+                          bottom: 45,
+                        }}
+                        grid={{ horizontal: true }}
+                      />
+                    </>
+                  )}
 
-                              <Typography
-                                variant="body2"
-                                color="text.secondary"
-                                sx={{ mb: 1 }}
-                              >
-                                {event.category
-                                  ?.replace("_", " ")
-                                  .replace(/\b\w/g, (letter) =>
-                                    letter.toUpperCase()
-                                  )}
-                                {" · "}
-                                {new Date(
-                                  event.occurred_at
-                                ).toLocaleTimeString("en-AU", {
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                })}
-                              </Typography>
+                  {/* Histogram */}
 
-                              {event.description && (
-                                <Typography variant="body2">
-                                  {event.description}
-                                </Typography>
-                              )}
-                            </Paper>
-                          ))}
-                        </Stack>
-                      )}
+                  {graphType === "histogram" && hasHistogramData && (
+                    <>
+                      <Typography variant="h6" gutterBottom>
+                        Rating Frequency
+                      </Typography>
+
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ mb: 2 }}
+                      >
+                        Shows how many times each rating was recorded.
+                      </Typography>
+
+                      <BarChart
+                        height={350}
+                        xAxis={[
+                          {
+                            scaleType: "band",
+                            data: [
+                              "1",
+                              "2",
+                              "3",
+                              "4",
+                              "5",
+                              "6",
+                              "7",
+                              "8",
+                              "9",
+                              "10",
+                            ],
+                            label: "Rating",
+                          },
+                        ]}
+                        yAxis={[
+                          {
+                            min: 0,
+                            label: "Number of entries",
+                            valueFormatter: (value) => String(value),
+                          },
+                        ]}
+                        series={histogramSeries}
+                        margin={{
+                          left: 65,
+                          right: 30,
+                          top: 25,
+                          bottom: 45,
+                        }}
+                        grid={{ horizontal: true }}
+                      />
                     </>
                   )}
                 </>
               )}
-          </Paper>
-
-          {/* Records summary */}
-          {!loading && !error && (
-            <Paper elevation={2} sx={{ p: 3, mt: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                Records Summary
-              </Typography>
-
-              <Divider sx={{ mb: 2 }} />
-
-              <Grid container spacing={2}>
-                {selectedMood && (
-                  <Grid size={{ xs: 12, sm: 4 }}>
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                    >
-                      Mood Entries
-                    </Typography>
-
-                    <Typography variant="h4" color="#8C52FF">
-                      {moodRecordCount}
-                    </Typography>
-                  </Grid>
-                )}
-
-                {selectedPain && (
-                  <Grid size={{ xs: 12, sm: 4 }}>
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                    >
-                      Pain Entries
-                    </Typography>
-
-                    <Typography variant="h4" color="#7ED957">
-                      {painRecordCount}
-                    </Typography>
-                  </Grid>
-                )}
-
-                {selectedEvents && graphType === "line" && (
-                  <Grid size={{ xs: 12, sm: 4 }}>
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                    >
-                      Events
-                    </Typography>
-
-                    <Typography variant="h4" color="#F4A261">
-                      {eventRecordCount}
-                    </Typography>
-                  </Grid>
-                )}
-              </Grid>
             </Paper>
-          )}
+
+            {/* Records summary */}
+
+            {!loading && !error && (
+              <Paper
+                elevation={2}
+                sx={{
+                  p: 3,
+                  mb: 2,
+                  boxShadow: "none",
+                  border: "1px solid #E0E5EB",
+                }}
+              >
+                <Typography variant="h6" gutterBottom>
+                  Records Summary
+                </Typography>
+
+                <Divider sx={{ mb: 2 }} />
+
+                <Grid container spacing={2}>
+                  {selectedMood && (
+                    <Grid size={{ xs: 12, sm: 4 }}>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                      >
+                        Mood Entries
+                      </Typography>
+
+                      <Typography variant="h4" color="#8C52FF">
+                        {moodRecordCount}
+                      </Typography>
+                    </Grid>
+                  )}
+
+                  {selectedPain && (
+                    <Grid size={{ xs: 12, sm: 4 }}>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                      >
+                        Pain Entries
+                      </Typography>
+
+                      <Typography variant="h4" color="#7ED957">
+                        {painRecordCount}
+                      </Typography>
+                    </Grid>
+                  )}
+
+                  {selectedEvents && graphType === "line" && (
+                    <Grid size={{ xs: 12, sm: 4 }}>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                      >
+                        Events
+                      </Typography>
+
+                      <Typography variant="h4" color="#F4A261">
+                        {eventRecordCount}
+                      </Typography>
+                    </Grid>
+                  )}
+                </Grid>
+              </Paper>
+            )}
+          </Box>
+
+          {/* Events section - captured separately for PDF page 2 */}
+
+          {!loading &&
+            !error &&
+            graphType === "line" &&
+            selectedEvents && (
+              <Box
+                ref={eventReportRef}
+                sx={{
+                  backgroundColor: "#ffffff",
+                  color: "#263F60",
+                  p: 1,
+                  borderRadius: 1,
+                  mt: 3,
+                }}
+              >
+                <Paper
+                  elevation={2}
+                  sx={{
+                    p: 3,
+                    boxShadow: "none",
+                    border: "1px solid #E0E5EB",
+                  }}
+                >
+                  <Typography
+                    variant="h5"
+                    fontWeight="bold"
+                    gutterBottom
+                  >
+                    Events
+                  </Typography>
+
+                  <Typography variant="body2" color="text.secondary">
+                    Events recorded between {reportStartDate} and{" "}
+                    {reportEndDate}.
+                  </Typography>
+
+                  <Divider sx={{ my: 2 }} />
+
+                  {hasEventData ? (
+                    <>
+                      <Typography variant="h6" gutterBottom>
+                        Events Recorded by Date
+                      </Typography>
+
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                      >
+                        Select an orange bar to view the events recorded
+                        on that date.
+                      </Typography>
+
+                      <BarChart
+                        height={220}
+                        xAxis={[
+                          {
+                            scaleType: "band",
+                            data: chartLabels,
+                            label: "Date",
+                          },
+                        ]}
+                        yAxis={[
+                          {
+                            min: 0,
+                            max: Math.max(1, ...eventCounts),
+                            label: "Number of events",
+                            valueFormatter: (value) => String(value),
+                          },
+                        ]}
+                        series={[
+                          {
+                            id: "events",
+                            label: "Events",
+                            data: eventCounts,
+                            color: "#F4A261",
+                            valueFormatter: (value) =>
+                              `${value} ${
+                                value === 1 ? "event" : "events"
+                              }`,
+                          },
+                        ]}
+                        onItemClick={handleEventBarClick}
+                        margin={{
+                          left: 65,
+                          right: 30,
+                          top: 20,
+                          bottom: 45,
+                        }}
+                        grid={{ horizontal: true }}
+                      />
+
+                      <Divider sx={{ my: 3 }} />
+
+                      <Typography variant="h6" gutterBottom>
+                        Event Details
+                      </Typography>
+
+                      {!selectedEventDate && (
+                        <Typography color="text.secondary">
+                          Select an Events bar above to view the details
+                          for that date.
+                        </Typography>
+                      )}
+
+                      {selectedEventDate && (
+                        <>
+                          <Typography
+                            variant="subtitle1"
+                            fontWeight="bold"
+                            sx={{ mb: 2 }}
+                          >
+                            {formatDisplayDate(
+                              new Date(`${selectedEventDate}T00:00:00`)
+                            )}
+                          </Typography>
+
+                          {selectedEventsForDate.length === 0 ? (
+                            <Typography color="text.secondary">
+                              No events found for this date.
+                            </Typography>
+                          ) : (
+                            <Stack spacing={2}>
+                              {selectedEventsForDate.map((event) => (
+                                <Paper
+                                  key={event._id}
+                                  variant="outlined"
+                                  sx={{ p: 2 }}
+                                >
+                                  <Typography
+                                    variant="subtitle1"
+                                    fontWeight="bold"
+                                  >
+                                    {event.title}
+                                  </Typography>
+
+                                  <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                    sx={{ mb: 1 }}
+                                  >
+                                    {event.category
+                                      ?.replace("_", " ")
+                                      .replace(/\b\w/g, (letter) =>
+                                        letter.toUpperCase()
+                                      )}
+                                    {" · "}
+                                    {new Date(
+                                      event.occurred_at
+                                    ).toLocaleTimeString("en-AU", {
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    })}
+                                  </Typography>
+
+                                  {event.description && (
+                                    <Typography variant="body2">
+                                      {event.description}
+                                    </Typography>
+                                  )}
+                                </Paper>
+                              ))}
+                            </Stack>
+                          )}
+                        </>
+                      )}
+                    </>
+                  ) : (
+                    <Alert severity="info">
+                      No events have been recorded during this time range.
+                    </Alert>
+                  )}
+                </Paper>
+              </Box>
+            )}
         </Grid>
       </Grid>
     </Box>
