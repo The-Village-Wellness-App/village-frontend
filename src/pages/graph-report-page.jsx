@@ -555,7 +555,7 @@ function GraphReportPage() {
               {/* Graph type */}
 
               <Box>
-                <Typography variant="subtitle1" fontWeight="bold">
+                <Typography variant="subtitle1" fontWeight="bold" sx={{ textAlign: "left" }}>
                   Graph Type
                 </Typography>
 
@@ -591,7 +591,7 @@ function GraphReportPage() {
               {/* Rating type */}
 
               <Box>
-                <Typography variant="subtitle1" fontWeight="bold">
+                <Typography variant="subtitle1" fontWeight="bold" sx={{ textAlign: "left" }}>
                   Rating Type
                 </Typography>
 
@@ -649,7 +649,7 @@ function GraphReportPage() {
               {/* Time range */}
 
               <Box>
-                <Typography variant="subtitle1" fontWeight="bold">
+                <Typography variant="subtitle1" fontWeight="bold" sx={{ textAlign: "left" }}>
                   Time Range
                 </Typography>
 

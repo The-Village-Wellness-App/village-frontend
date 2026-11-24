@@ -1,5 +1,17 @@
-import { createContext, useContext, useState, useEffect } from "react";
-import { ThemeProvider } from "@mui/material/styles";
+
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useMemo,
+} from "react";
+
+import {
+  ThemeProvider,
+  CssBaseline,
+} from "@mui/material";
+
 import createAppTheme from "../theme";
 import { fetchData } from "../services/api";
 
@@ -11,12 +23,16 @@ export function ThemeProviderWrapper({ children }) {
   useEffect(() => {
     const loadUserTheme = async () => {
       const token = localStorage.getItem("authToken");
+
       if (!token) return;
 
       try {
         const payload = JSON.parse(atob(token.split(".")[1]));
+
         const response = await fetchData(`/users/${payload.userId}`);
-        if (response?.data?.theme) {
+
+        if (response?.data?.theme === "light" ||
+            response?.data?.theme === "dark") {
           setMode(response.data.theme);
         }
       } catch (err) {
@@ -27,14 +43,20 @@ export function ThemeProviderWrapper({ children }) {
     loadUserTheme();
   }, []);
 
-  const theme = createAppTheme(mode);
+  const theme = useMemo(() => createAppTheme(mode), [mode]);
 
   const updateTheme = async (newMode) => {
+    if (newMode !== "light" && newMode !== "dark") return;
+
+    // Apply the theme immediately
+    setMode(newMode);
+
     const token = localStorage.getItem("authToken");
 
     if (token) {
       try {
         const payload = JSON.parse(atob(token.split(".")[1]));
+
         await fetchData(`/users/${payload.userId}`, {
           method: "PATCH",
           body: JSON.stringify({ theme: newMode }),
@@ -43,13 +65,14 @@ export function ThemeProviderWrapper({ children }) {
         console.error("Failed to update theme:", err);
       }
     }
-
-    setMode(newMode);
   };
 
   return (
     <ThemeContext.Provider value={{ mode, updateTheme }}>
-      <ThemeProvider theme={theme}>{children}</ThemeProvider>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        {children}
+      </ThemeProvider>
     </ThemeContext.Provider>
   );
 }
@@ -57,8 +80,12 @@ export function ThemeProviderWrapper({ children }) {
 // eslint-disable-next-line react-refresh/only-export-components
 export function useThemeContext() {
   const context = useContext(ThemeContext);
+
   if (!context) {
-    throw new Error("useThemeContext must be used within a ThemeProviderWrapper");
+    throw new Error(
+      "useThemeContext must be used within a ThemeProviderWrapper"
+    );
   }
+
   return context;
 }

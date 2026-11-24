@@ -1,25 +1,28 @@
-import { useMediaQuery } from "@mui/material";
+
+import { useThemeContext } from "../contexts/ThemeContext";
 
 import lightLogo from "../assets/banner-light.webp";
 import darkLogo from "../assets/banner-dark.webp";
 
 function Header() {
-  const prefersDarkMode = useMediaQuery(
-    "(prefers-color-scheme: dark)"
-  );
+  const { mode } = useThemeContext();
 
-  const logo = prefersDarkMode
-    ? darkLogo
-    : lightLogo;
-
-  console.log("Browser prefers dark:", prefersDarkMode);
+  const logo = mode === "dark" ? darkLogo : lightLogo;
 
   return (
     <header>
       <img
         src={logo}
         alt="The Village Wellness App Logo"
-        height="350"
+        style={{
+          display: "block",
+          width: "100%",
+          maxWidth: "1126px",
+          height: "auto",
+          maxHeight: "440px",
+          objectFit: "contain",
+          margin: "0 auto",
+        }}
       />
     </header>
   );

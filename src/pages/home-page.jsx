@@ -36,7 +36,6 @@ const graphData = [
 ];
 
 // Daily wellness tips.
-// A different tip is selected each day.
 const wellnessTips = [
   "Even a five-minute walk can improve mood and reduce stress. Take a moment to step outside today.",
   "Remember to drink water throughout the day. Staying hydrated supports concentration and energy.",
@@ -70,6 +69,38 @@ const getDateKey = (date) => {
   return `${year}-${month}-${day}`;
 };
 
+// Calculate daily averages for Mood and Pain records.
+const calculateDailyAverages = (records, dates) => {
+  return dates.map((date) => {
+    const dateKey = getDateKey(date);
+
+    const dailyRecords = records.filter((record) => {
+      if (!record.occurred_at) return false;
+
+      const recordDate = new Date(record.occurred_at);
+
+      return (
+        !Number.isNaN(recordDate.getTime()) &&
+        getDateKey(recordDate) === dateKey &&
+        typeof record.value === "number" &&
+        record.value >= 1 &&
+        record.value <= 10
+      );
+    });
+
+    if (dailyRecords.length === 0) {
+      return null;
+    }
+
+    const total = dailyRecords.reduce(
+      (sum, record) => sum + record.value,
+      0
+    );
+
+    return Number((total / dailyRecords.length).toFixed(1));
+  });
+};
+
 export default function HomePage() {
   const navigate = useNavigate();
 
@@ -86,13 +117,14 @@ export default function HomePage() {
   const today = new Date();
 
   const dayNumber = Math.floor(
-    (Date.UTC(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate()
-    ) -
-      Date.UTC(today.getFullYear(), 0, 0)) /
-      86400000
+    (
+      Date.UTC(
+        today.getFullYear(),
+        today.getMonth(),
+        today.getDate()
+      ) -
+      Date.UTC(today.getFullYear(), 0, 0)
+    ) / 86400000
   );
 
   const dailyWellnessTip =
@@ -103,11 +135,6 @@ export default function HomePage() {
     let isMounted = true;
 
     if (!authToken) {
-      setMoods([]);
-      setPains([]);
-      setLoading(false);
-      setError("");
-
       return () => {
         isMounted = false;
       };
@@ -115,9 +142,6 @@ export default function HomePage() {
 
     const loadGraphData = async () => {
       try {
-        setLoading(true);
-        setError("");
-
         const [moodResponse, painResponse] = await Promise.all([
           fetchData("/moods"),
           fetchData("/pains"),
@@ -173,45 +197,14 @@ export default function HomePage() {
     [dateLabels]
   );
 
-  // Calculate daily averages for live Mood and Pain records.
-  const calculateDailyAverages = (records) => {
-    return dateLabels.map((date) => {
-      const dateKey = getDateKey(date);
-
-      const dailyRecords = records.filter((record) => {
-        if (!record.occurred_at) return false;
-
-        const recordDate = new Date(record.occurred_at);
-
-        return (
-          !Number.isNaN(recordDate.getTime()) &&
-          getDateKey(recordDate) === dateKey &&
-          typeof record.value === "number" &&
-          record.value >= 1 &&
-          record.value <= 10
-        );
-      });
-
-      if (dailyRecords.length === 0) {
-        return null;
-      }
-
-      const total = dailyRecords.reduce(
-        (sum, record) => sum + record.value,
-        0
-      );
-
-      return Number((total / dailyRecords.length).toFixed(1));
-    });
-  };
-
+  // Calculate live Mood and Pain averages.
   const liveMoodData = useMemo(
-    () => calculateDailyAverages(moods),
+    () => calculateDailyAverages(moods, dateLabels),
     [moods, dateLabels]
   );
 
   const livePainData = useMemo(
-    () => calculateDailyAverages(pains),
+    () => calculateDailyAverages(pains, dateLabels),
     [pains, dateLabels]
   );
 
@@ -388,7 +381,7 @@ export default function HomePage() {
             </>
           )}
 
-          {/* Visitor: show dummy placeholder data */}
+          {/* Visitors: show dummy placeholder data */}
 
           {!isLoggedIn && (
             <LineChart
@@ -437,7 +430,7 @@ export default function HomePage() {
         </Box>
       </Paper>
 
-      {/* Daily Wellness Tip - Full Width Bottom Section */}
+      {/* Daily Wellness Tip */}
 
       <Grid container spacing={3}>
         <Grid size={{ xs: 12 }}>
