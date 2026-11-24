@@ -438,7 +438,7 @@ export default function HomePage() {
             <Stack
               direction={{ xs: "column", sm: "row" }}
               spacing={3}
-              alignItems="center"
+              sx={{ alignItems: "center" }}
             >
               <SpaIcon color="success" sx={{ fontSize: 55 }} />
 
