@@ -1,52 +1,139 @@
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import {
-  Grid,
-  Paper,
-  Typography,
+  Alert,
+  Box,
   Checkbox,
+  CircularProgress,
+  Divider,
   FormControlLabel,
   FormGroup,
-  Box,
-  Divider,
-  Stack,
+  Grid,
+  Paper,
   Radio,
   RadioGroup,
-  CircularProgress,
-  Alert,
+  Stack,
+  Typography,
 } from "@mui/material";
 
 import { LineChart } from "@mui/x-charts/LineChart";
+import { BarChart } from "@mui/x-charts/BarChart";
 
 import { fetchData } from "../services/api";
 
-export default function GraphPage() {
+// Format a date as YYYY-MM-DD using local time.
+const getDateKey = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+};
+
+// Format dates for display.
+const formatDisplayDate = (date) =>
+  date.toLocaleDateString("en-AU", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+
+// Calculate the daily average for Mood or Pain.
+const calculateDailyAverages = (records, dateLabels, selectedDateKeys) => {
+  return dateLabels.map((date) => {
+    const dateKey = getDateKey(date);
+
+    if (!selectedDateKeys.includes(dateKey)) {
+      return null;
+    }
+
+    const dailyRecords = records.filter((record) => {
+      if (!record.occurred_at) return false;
+
+      const recordDate = new Date(record.occurred_at);
+
+      return (
+        !Number.isNaN(recordDate.getTime()) &&
+        getDateKey(recordDate) === dateKey &&
+        typeof record.value === "number" &&
+        record.value >= 1 &&
+        record.value <= 10
+      );
+    });
+
+    if (dailyRecords.length === 0) {
+      return null;
+    }
+
+    const total = dailyRecords.reduce(
+      (sum, record) => sum + record.value,
+      0
+    );
+
+    return Number((total / dailyRecords.length).toFixed(1));
+  });
+};
+
+// Count how many times each rating from 1–10 was recorded.
+const calculateRatingFrequency = (records, selectedDateKeys) => {
+  return Array.from({ length: 10 }, (_, index) => {
+    const rating = index + 1;
+
+    return records.filter((record) => {
+      if (!record.occurred_at) return false;
+
+      const recordDate = new Date(record.occurred_at);
+
+      return (
+        !Number.isNaN(recordDate.getTime()) &&
+        selectedDateKeys.includes(getDateKey(recordDate)) &&
+        record.value === rating
+      );
+    }).length;
+  });
+};
+
+function GraphReportPage() {
   const [moods, setMoods] = useState([]);
   const [pains, setPains] = useState([]);
+  const [events, setEvents] = useState([]);
 
   const [selectedMood, setSelectedMood] = useState(true);
   const [selectedPain, setSelectedPain] = useState(true);
+
+  // Events are hidden until the user selects the checkbox.
+  const [selectedEvents, setSelectedEvents] = useState(false);
+
   const [timeRange, setTimeRange] = useState("7");
+  const [graphType, setGraphType] = useState("line");
+
+  const [selectedEventDate, setSelectedEventDate] = useState("");
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Retrieve the user's mood and pain records.
+  // Fetch Mood, Pain and Event records.
   useEffect(() => {
     let isMounted = true;
 
-    const loadRecords = async () => {
+    const loadGraphData = async () => {
       try {
-        const [moodResponse, painResponse] = await Promise.all([
-          fetchData("/moods"),
-          fetchData("/pains"),
-        ]);
+        setLoading(true);
+        setError("");
+
+        const [moodResponse, painResponse, eventResponse] =
+          await Promise.all([
+            fetchData("/moods"),
+            fetchData("/pains"),
+            fetchData("/events"),
+          ]);
 
         if (!isMounted) return;
 
-        setMoods(Array.isArray(moodResponse?.data) ? moodResponse.data : []);
-        setPains(Array.isArray(painResponse?.data) ? painResponse.data : []);
+        setMoods(moodResponse?.data || []);
+        setPains(painResponse?.data || []);
+        setEvents(eventResponse?.events || []);
       } catch (err) {
         if (isMounted) {
           setError(err.message || "Unable to load graph data.");
@@ -58,182 +145,293 @@ export default function GraphPage() {
       }
     };
 
-    loadRecords();
+    loadGraphData();
 
     return () => {
       isMounted = false;
     };
   }, []);
 
-  // Generate the dates displayed on the graph.
+  // Generate the dates for the selected time range.
   const dateLabels = useMemo(() => {
     const days = Number(timeRange);
-    const today = new Date();
+    const dates = [];
 
-    return Array.from({ length: days }, (_, index) => {
-      const date = new Date(
-        today.getFullYear(),
-        today.getMonth(),
-        today.getDate() - (days - 1 - index)
-      );
+    for (let i = days - 1; i >= 0; i -= 1) {
+      const date = new Date();
+      date.setHours(0, 0, 0, 0);
+      date.setDate(date.getDate() - i);
+      dates.push(date);
+    }
 
-      return date;
-    });
+    return dates;
   }, [timeRange]);
 
-  // Format dates using the user's local date.
-  const getDateKey = (date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
+  const selectedDateKeys = useMemo(
+    () => dateLabels.map((date) => getDateKey(date)),
+    [dateLabels]
+  );
 
-    return `${year}-${month}-${day}`;
-  };
+  const chartLabels = useMemo(
+    () =>
+      dateLabels.map((date) =>
+        date.toLocaleDateString("en-AU", {
+          day: "numeric",
+          month: "short",
+        })
+      ),
+    [dateLabels]
+  );
 
-  // Calculate daily average ratings.
-  const calculateDailyAverages = useCallback((records) => {
-  const dailyTotals = {};
+  // Daily Mood and Pain averages.
+  const moodData = useMemo(
+    () => calculateDailyAverages(moods, dateLabels, selectedDateKeys),
+    [moods, dateLabels, selectedDateKeys]
+  );
 
-  records.forEach((record) => {
+  const painData = useMemo(
+    () => calculateDailyAverages(pains, dateLabels, selectedDateKeys),
+    [pains, dateLabels, selectedDateKeys]
+  );
+
+  // Count Events recorded on each date.
+  const eventCounts = useMemo(
+    () =>
+      dateLabels.map((date) => {
+        const dateKey = getDateKey(date);
+
+        return events.filter((event) => {
+          if (!event.occurred_at) return false;
+
+          const eventDate = new Date(event.occurred_at);
+
+          return (
+            !Number.isNaN(eventDate.getTime()) &&
+            getDateKey(eventDate) === dateKey
+          );
+        }).length;
+      }),
+    [events, dateLabels]
+  );
+
+  // Mood and Pain line chart series.
+  const dailySeries = useMemo(() => {
+    const series = [];
+
+    if (selectedMood) {
+      series.push({
+        id: "mood",
+        label: "Mood",
+        data: moodData,
+        color: "#8C52FF",
+        showMark: true,
+        shape: "circle",
+        labelMarkType: "circle",
+        connectNulls: true,
+        valueFormatter: (value) =>
+          value === null ? "No entry" : `${value}/10`,
+      });
+    }
+
+    if (selectedPain) {
+      series.push({
+        id: "pain",
+        label: "Pain",
+        data: painData,
+        color: "#7ED957",
+        showMark: true,
+        shape: "square",
+        labelMarkType: "square",
+        connectNulls: true,
+        valueFormatter: (value) =>
+          value === null ? "No entry" : `${value}/10`,
+      });
+    }
+
+    return series;
+  }, [selectedMood, selectedPain, moodData, painData]);
+
+  // Histogram data: number of times each rating was recorded.
+  const moodFrequencies = useMemo(
+    () => calculateRatingFrequency(moods, selectedDateKeys),
+    [moods, selectedDateKeys]
+  );
+
+  const painFrequencies = useMemo(
+    () => calculateRatingFrequency(pains, selectedDateKeys),
+    [pains, selectedDateKeys]
+  );
+
+  const histogramSeries = useMemo(() => {
+    const series = [];
+
+    if (selectedMood) {
+      series.push({
+        id: "mood",
+        label: "Mood",
+        data: moodFrequencies,
+        color: "#8C52FF",
+      });
+    }
+
+    if (selectedPain) {
+      series.push({
+        id: "pain",
+        label: "Pain",
+        data: painFrequencies,
+        color: "#7ED957",
+      });
+    }
+
+    return series;
+  }, [
+    selectedMood,
+    selectedPain,
+    moodFrequencies,
+    painFrequencies,
+  ]);
+
+  // Check whether there is data to display.
+  const hasMoodData = moodData.some((value) => value !== null);
+  const hasPainData = painData.some((value) => value !== null);
+  const hasEventData = eventCounts.some((count) => count > 0);
+
+  const hasRatingData =
+    (selectedMood && hasMoodData) || (selectedPain && hasPainData);
+
+  const hasHistogramData = histogramSeries.some((series) =>
+    series.data.some((value) => value > 0)
+  );
+
+  const hasChartData =
+    graphType === "histogram"
+      ? hasHistogramData
+      : graphType === "line"
+        ? hasRatingData || (selectedEvents && hasEventData)
+        : hasRatingData;
+
+  const noSelectedRatings = !selectedMood && !selectedPain;
+
+  // Allow Events to be displayed on their own in Line Chart mode.
+  const showSelectionMessage =
+    noSelectedRatings &&
+    !(graphType === "line" && selectedEvents);
+
+  // Count records in the selected time range.
+  const moodRecordCount = moods.filter((record) => {
+    if (!record.occurred_at) return false;
+
     const date = new Date(record.occurred_at);
 
-    if (
-      Number.isNaN(date.getTime()) ||
-      !Number.isFinite(Number(record.value))
-    ) {
-      return;
-    }
-
-    const dateKey = getDateKey(date);
-
-    if (!dailyTotals[dateKey]) {
-      dailyTotals[dateKey] = {
-        total: 0,
-        count: 0,
-      };
-    }
-
-    dailyTotals[dateKey].total += Number(record.value);
-    dailyTotals[dateKey].count += 1;
-  });
-
-  return dateLabels.map((date) => {
-    const dailyRecord = dailyTotals[getDateKey(date)];
-
-    if (!dailyRecord) {
-      return null;
-    }
-
-    return Number(
-      (dailyRecord.total / dailyRecord.count).toFixed(1)
+    return (
+      !Number.isNaN(date.getTime()) &&
+      selectedDateKeys.includes(getDateKey(date))
     );
-  });
-}, [dateLabels]);
+  }).length;
 
-  // Prepare graph data whenever records or timeframe change.
-  const moodData = useMemo(
-  () => calculateDailyAverages(moods),
-  [moods, calculateDailyAverages]
-);
+  const painRecordCount = pains.filter((record) => {
+    if (!record.occurred_at) return false;
 
-const painData = useMemo(
-  () => calculateDailyAverages(pains),
-  [pains, calculateDailyAverages]
-);
+    const date = new Date(record.occurred_at);
 
-  const chartLabels = dateLabels.map((date) =>
-    date.toLocaleDateString("en-AU", {
-      day: "numeric",
-      month: "short",
-    })
-  );
+    return (
+      !Number.isNaN(date.getTime()) &&
+      selectedDateKeys.includes(getDateKey(date))
+    );
+  }).length;
 
-  // Prepare the selected graph series.
-  const chartSeries = [];
+  const eventRecordCount = events.filter((event) => {
+    if (!event.occurred_at) return false;
 
-  if (selectedMood) {
-    chartSeries.push({
-      label: "Mood",
-      data: moodData,
-      color: "#8C52FF",
-      showMark: true,
-      connectNulls: false,
-      valueFormatter: (value) =>
-        value === null ? "No entry" : `${value}/10`,
-    });
-  }
+    const date = new Date(event.occurred_at);
 
-  if (selectedPain) {
-    chartSeries.push({
-      label: "Pain",
-      data: painData,
-      color: "#7ED957",
-      showMark: true,
-      connectNulls: false,
-      valueFormatter: (value) =>
-        value === null ? "No entry" : `${value}/10`,
-    });
-  }
+    return (
+      !Number.isNaN(date.getTime()) &&
+      selectedDateKeys.includes(getDateKey(date))
+    );
+  }).length;
 
-  // Check whether any selected series has records.
-  const hasChartData = chartSeries.some((series) =>
-    series.data.some((value) => value !== null)
-  );
+  // Find the events for the date selected by clicking an Events bar.
+  const selectedEventsForDate = useMemo(() => {
+    if (!selectedEventDate) return [];
 
-  // Count records within the selected timeframe.
-  const recordCount = dateLabels.reduce((total, date) => {
-    const dateKey = getDateKey(date);
+    return events
+      .filter((event) => {
+        if (!event.occurred_at) return false;
 
-    const moodCount = moods.filter(
-      (record) =>
-        getDateKey(new Date(record.occurred_at)) === dateKey
-    ).length;
+        const date = new Date(event.occurred_at);
 
-    const painCount = pains.filter(
-      (record) =>
-        getDateKey(new Date(record.occurred_at)) === dateKey
-    ).length;
+        return (
+          !Number.isNaN(date.getTime()) &&
+          getDateKey(date) === selectedEventDate
+        );
+      })
+      .sort(
+        (a, b) =>
+          new Date(a.occurred_at) - new Date(b.occurred_at)
+      );
+  }, [events, selectedEventDate]);
 
-    return total + (selectedMood ? moodCount : 0) +
-      (selectedPain ? painCount : 0);
-  }, 0);
+  // Handle clicking an Events bar.
+  const handleEventBarClick = (event, params) => {
+    const clickedDate = dateLabels[params.dataIndex];
+
+    if (clickedDate) {
+      setSelectedEventDate(getDateKey(clickedDate));
+    }
+  };
 
   return (
-    <Box sx={{ p: { xs: 2, md: 4 } }}>
+    <Box sx={{ p: { xs: 2, md: 3 } }}>
       <Grid container spacing={3}>
-        {/* Graph Options */}
+        {/* Graph options */}
         <Grid size={{ xs: 12, md: 3 }}>
-          <Paper sx={{ p: 3 }}>
-            <Typography variant="h5" gutterBottom>
+          <Paper elevation={2} sx={{ p: 3, height: "100%" }}>
+            <Typography variant="h6" gutterBottom>
               Graph Options
             </Typography>
 
-            <Divider sx={{ mb: 3 }} />
+            <Divider sx={{ mb: 2 }} />
 
             <Stack spacing={3}>
-              {/* Graph Type */}
+              {/* Graph type */}
               <Box>
-                <Typography variant="h6" sx={{ mb: 1 }}>
+                <Typography variant="subtitle1" fontWeight="bold">
                   Graph Type
                 </Typography>
 
-                <FormGroup>
+                <RadioGroup
+                  value={graphType}
+                  onChange={(event) => {
+                    setGraphType(event.target.value);
+                    setSelectedEventDate("");
+                  }}
+                >
                   <FormControlLabel
-                    control={<Checkbox checked disabled />}
-                    label="Line Graph"
+                    value="line"
+                    control={<Radio />}
+                    label="Line Chart"
                   />
-                </FormGroup>
 
-                <Typography variant="caption" color="text.secondary">
-                  Additional graph types may be added later.
-                </Typography>
+                  <FormControlLabel
+                    value="bar"
+                    control={<Radio />}
+                    label="Bar Chart"
+                  />
+
+                  <FormControlLabel
+                    value="histogram"
+                    control={<Radio />}
+                    label="Histogram"
+                  />
+                </RadioGroup>
               </Box>
 
               <Divider />
 
-              {/* Rating Type */}
+              {/* Rating type */}
               <Box>
-                <Typography variant="h6" sx={{ mb: 1 }}>
+                <Typography variant="subtitle1" fontWeight="bold">
                   Rating Type
                 </Typography>
 
@@ -261,20 +459,45 @@ const painData = useMemo(
                     }
                     label="Pain"
                   />
+
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={selectedEvents}
+                        disabled={graphType !== "line"}
+                        onChange={(event) => {
+                          setSelectedEvents(event.target.checked);
+                          setSelectedEventDate("");
+                        }}
+                      />
+                    }
+                    label="Events"
+                  />
                 </FormGroup>
+
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  display="block"
+                >
+                  Events can be displayed with the Line Chart.
+                </Typography>
               </Box>
 
               <Divider />
 
-              {/* Time Range */}
+              {/* Time range */}
               <Box>
-                <Typography variant="h6" sx={{ mb: 1 }}>
+                <Typography variant="subtitle1" fontWeight="bold">
                   Time Range
                 </Typography>
 
                 <RadioGroup
                   value={timeRange}
-                  onChange={(event) => setTimeRange(event.target.value)}
+                  onChange={(event) => {
+                    setTimeRange(event.target.value);
+                    setSelectedEventDate("");
+                  }}
                 >
                   <FormControlLabel
                     value="7"
@@ -299,95 +522,397 @@ const painData = useMemo(
           </Paper>
         </Grid>
 
-        {/* Main Graph */}
+        {/* Graphs and reports */}
         <Grid size={{ xs: 12, md: 9 }}>
-          <Paper sx={{ p: 3, minHeight: 500 }}>
-            <Typography variant="h5">
+          <Paper elevation={2} sx={{ p: 3 }}>
+            <Typography variant="h5" gutterBottom>
               Graphs & Reports
             </Typography>
 
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ mt: 1 }}
-            >
-              Daily average mood and pain ratings over the selected period.
+            <Typography variant="body2" color="text.secondary">
+              View your Mood, Pain and Event records over time.
             </Typography>
 
-            {!loading && !error && (
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{ mt: 1 }}
+            <Divider sx={{ my: 2 }} />
+
+            {loading && (
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "center",
+                  py: 6,
+                }}
               >
-                {recordCount} {recordCount === 1 ? "record" : "records"} in
-                the selected period.
-              </Typography>
+                <CircularProgress />
+              </Box>
             )}
 
-            <Box
-              sx={{
-                mt: 3,
-                minHeight: 350,
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-            >
-              {loading ? (
-                <Stack alignItems="center" spacing={2}>
-                  <CircularProgress />
-                  <Typography color="text.secondary">
-                    Loading your records...
-                  </Typography>
-                </Stack>
-              ) : error ? (
-                <Alert severity="error" sx={{ width: "100%" }}>
-                  {error}
+            {!loading && error && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {error}
+              </Alert>
+            )}
+
+            {!loading && !error && showSelectionMessage && (
+              <Alert severity="info">
+                Please select Mood, Pain or Events to display a graph.
+              </Alert>
+            )}
+
+            {!loading &&
+              !error &&
+              !showSelectionMessage &&
+              !hasChartData && (
+                <Alert severity="info">
+                  No records are available for the selected options and time
+                  range.
                 </Alert>
-              ) : !selectedMood && !selectedPain ? (
-                <Typography color="text.secondary">
-                  Select Mood or Pain to display your graph.
-                </Typography>
-              ) : !hasChartData ? (
-                <Typography color="text.secondary">
-                  No mood or pain records found for this time period.
-                </Typography>
-              ) : (
-                <Box sx={{ width: "100%" }}>
-                  <LineChart
-                    height={350}
-                    xAxis={[
-                      {
-                        scaleType: "point",
-                        data: chartLabels,
-                        label: "Date",
-                      },
-                    ]}
-                    yAxis={[
-                      {
-                        min: 1,
-                        max: 10,
-                        label: "Rating",
-                      },
-                    ]}
-                    series={chartSeries}
-                    margin={{
-                      left: 55,
-                      right: 30,
-                      top: 30,
-                      bottom: 45,
-                    }}
-                    grid={{
-                      horizontal: true,
-                    }}
-                  />
-                </Box>
               )}
-            </Box>
+
+            {!loading && !error && hasChartData && (
+              <>
+                {/* Line chart */}
+                {graphType === "line" && (
+                  <Stack spacing={2}>
+                    {dailySeries.length > 0 && hasRatingData && (
+                      <>
+                        <Typography variant="h6">
+                          Daily Mood and Pain
+                        </Typography>
+
+                        <LineChart
+                          height={320}
+                          xAxis={[
+                            {
+                              scaleType: "band",
+                              data: chartLabels,
+                              label: "Date",
+                            },
+                          ]}
+                          yAxis={[
+                            {
+                              min: 1,
+                              max: 10,
+                              label: "Rating (1–10)",
+                            },
+                          ]}
+                          series={dailySeries}
+                          margin={{
+                            left: 65,
+                            right: 30,
+                            top: 25,
+                            bottom: 45,
+                          }}
+                          grid={{ horizontal: true }}
+                        />
+                      </>
+                    )}
+
+                    {selectedEvents && (
+                      <>
+                        {dailySeries.length > 0 && hasRatingData && (
+                          <Divider sx={{ my: 1 }} />
+                        )}
+
+                        <Typography variant="h6">
+                          Events
+                        </Typography>
+
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                        >
+                          Select an orange bar to view the events recorded
+                          on that date.
+                        </Typography>
+
+                        {hasEventData ? (
+                          <BarChart
+                            height={190}
+                            xAxis={[
+                              {
+                                scaleType: "band",
+                                data: chartLabels,
+                                label: "Date",
+                              },
+                            ]}
+                            yAxis={[
+                              {
+                                min: 0,
+                                max: Math.max(1, ...eventCounts),
+                                label: "Number of events",
+                                valueFormatter: (value) => String(value),
+                              },
+                            ]}
+                            series={[
+                              {
+                                id: "events",
+                                label: "Events",
+                                data: eventCounts,
+                                color: "#F4A261",
+                                valueFormatter: (value) =>
+                                  `${value} ${
+                                    value === 1 ? "event" : "events"
+                                  }`,
+                              },
+                            ]}
+                            onItemClick={handleEventBarClick}
+                            margin={{
+                              left: 65,
+                              right: 30,
+                              top: 15,
+                              bottom: 45,
+                            }}
+                            grid={{ horizontal: true }}
+                          />
+                        ) : (
+                          <Alert severity="info">
+                            No events have been recorded during this time
+                            range.
+                          </Alert>
+                        )}
+                      </>
+                    )}
+                  </Stack>
+                )}
+
+                {/* Daily average bar chart */}
+                {graphType === "bar" && hasRatingData && (
+                  <>
+                    <Typography variant="h6" gutterBottom>
+                      Daily Average Ratings
+                    </Typography>
+
+                    <BarChart
+                      height={350}
+                      xAxis={[
+                        {
+                          scaleType: "band",
+                          data: chartLabels,
+                          label: "Date",
+                        },
+                      ]}
+                      yAxis={[
+                        {
+                          min: 1,
+                          max: 10,
+                          label: "Rating (1–10)",
+                        },
+                      ]}
+                      series={dailySeries}
+                      margin={{
+                        left: 65,
+                        right: 30,
+                        top: 25,
+                        bottom: 45,
+                      }}
+                      grid={{ horizontal: true }}
+                    />
+                  </>
+                )}
+
+                {/* Rating frequency histogram */}
+                {graphType === "histogram" && hasHistogramData && (
+                  <>
+                    <Typography variant="h6" gutterBottom>
+                      Rating Frequency
+                    </Typography>
+
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ mb: 2 }}
+                    >
+                      Shows how many times each rating was recorded.
+                    </Typography>
+
+                    <BarChart
+                      height={350}
+                      xAxis={[
+                        {
+                          scaleType: "band",
+                          data: [
+                            "1",
+                            "2",
+                            "3",
+                            "4",
+                            "5",
+                            "6",
+                            "7",
+                            "8",
+                            "9",
+                            "10",
+                          ],
+                          label: "Rating",
+                        },
+                      ]}
+                      yAxis={[
+                        {
+                          min: 0,
+                          label: "Number of entries",
+                          valueFormatter: (value) => String(value),
+                        },
+                      ]}
+                      series={histogramSeries}
+                      margin={{
+                        left: 65,
+                        right: 30,
+                        top: 25,
+                        bottom: 45,
+                      }}
+                      grid={{ horizontal: true }}
+                    />
+                  </>
+                )}
+              </>
+            )}
+
+            {/* Event details */}
+            {!loading &&
+              !error &&
+              graphType === "line" &&
+              selectedEvents &&
+              hasEventData && (
+                <>
+                  <Divider sx={{ my: 3 }} />
+
+                  <Typography variant="h6" gutterBottom>
+                    Event Details
+                  </Typography>
+
+                  {!selectedEventDate && (
+                    <Typography color="text.secondary">
+                      Select an Events bar above to view the details for
+                      that date.
+                    </Typography>
+                  )}
+
+                  {selectedEventDate && (
+                    <>
+                      <Typography
+                        variant="subtitle1"
+                        fontWeight="bold"
+                        sx={{ mb: 2 }}
+                      >
+                        {formatDisplayDate(
+                          new Date(`${selectedEventDate}T00:00:00`)
+                        )}
+                      </Typography>
+
+                      {selectedEventsForDate.length === 0 ? (
+                        <Typography color="text.secondary">
+                          No events found for this date.
+                        </Typography>
+                      ) : (
+                        <Stack spacing={2}>
+                          {selectedEventsForDate.map((event) => (
+                            <Paper
+                              key={event._id}
+                              variant="outlined"
+                              sx={{ p: 2 }}
+                            >
+                              <Typography
+                                variant="subtitle1"
+                                fontWeight="bold"
+                              >
+                                {event.title}
+                              </Typography>
+
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                                sx={{ mb: 1 }}
+                              >
+                                {event.category
+                                  ?.replace("_", " ")
+                                  .replace(/\b\w/g, (letter) =>
+                                    letter.toUpperCase()
+                                  )}
+                                {" · "}
+                                {new Date(
+                                  event.occurred_at
+                                ).toLocaleTimeString("en-AU", {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                              </Typography>
+
+                              {event.description && (
+                                <Typography variant="body2">
+                                  {event.description}
+                                </Typography>
+                              )}
+                            </Paper>
+                          ))}
+                        </Stack>
+                      )}
+                    </>
+                  )}
+                </>
+              )}
           </Paper>
+
+          {/* Records summary */}
+          {!loading && !error && (
+            <Paper elevation={2} sx={{ p: 3, mt: 3 }}>
+              <Typography variant="h6" gutterBottom>
+                Records Summary
+              </Typography>
+
+              <Divider sx={{ mb: 2 }} />
+
+              <Grid container spacing={2}>
+                {selectedMood && (
+                  <Grid size={{ xs: 12, sm: 4 }}>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                    >
+                      Mood Entries
+                    </Typography>
+
+                    <Typography variant="h4" color="#8C52FF">
+                      {moodRecordCount}
+                    </Typography>
+                  </Grid>
+                )}
+
+                {selectedPain && (
+                  <Grid size={{ xs: 12, sm: 4 }}>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                    >
+                      Pain Entries
+                    </Typography>
+
+                    <Typography variant="h4" color="#7ED957">
+                      {painRecordCount}
+                    </Typography>
+                  </Grid>
+                )}
+
+                {selectedEvents && graphType === "line" && (
+                  <Grid size={{ xs: 12, sm: 4 }}>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                    >
+                      Events
+                    </Typography>
+
+                    <Typography variant="h4" color="#F4A261">
+                      {eventRecordCount}
+                    </Typography>
+                  </Grid>
+                )}
+              </Grid>
+            </Paper>
+          )}
         </Grid>
       </Grid>
     </Box>
   );
 }
+
+export default GraphReportPage;
