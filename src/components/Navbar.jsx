@@ -1,3 +1,4 @@
+
 import {
   AppBar,
   Toolbar,
@@ -12,6 +13,7 @@ import {
 
 import MenuIcon from "@mui/icons-material/Menu";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
+
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
 
@@ -29,94 +31,114 @@ export default function Navbar() {
     { label: "Graphs & Reports", path: "/graphs" },
   ];
 
+  const navButtonStyles = {
+    color: "secondary.main",
+    fontFamily: '"Roboto", sans-serif',
+    fontWeight: 500,
+    borderRadius: 1,
+    px: 2,
+
+    "&:hover": {
+      backgroundColor: "rgba(126, 217, 87, 0.15)",
+    },
+
+    "&.active": {
+      backgroundColor: "secondary.main",
+      color: "#142B4A",
+
+      "&:hover": {
+        backgroundColor: "secondary.main",
+      },
+    },
+  };
+
+  const accountButtonStyles = {
+    color: "secondary.main",
+
+    "&:hover": {
+      backgroundColor: "rgba(126, 217, 87, 0.15)",
+    },
+
+    "&.active": {
+      backgroundColor: "secondary.main",
+      color: "#142B4A",
+    },
+  };
+
+  // Render navigation links without creating nested components.
+  const renderNavigationLinks = (onNavigate) => (
+    <>
+      {navItems.map((item) => (
+        <Button
+          key={item.path}
+          component={NavLink}
+          to={item.path}
+          end={item.path === "/"}
+          onClick={onNavigate}
+          sx={{
+            ...navButtonStyles,
+            justifyContent: "flex-start",
+          }}
+        >
+          {item.label}
+        </Button>
+      ))}
+
+      <IconButton
+        component={NavLink}
+        to="/login"
+        onClick={onNavigate}
+        sx={accountButtonStyles}
+        aria-label="Account and theme settings"
+      >
+        <AccountCircleIcon />
+      </IconButton>
+    </>
+  );
+
   if (isMobile) {
     return (
       <>
-        <AppBar
-          position="static"
-          sx={{
-            backgroundColor: "#8C52FF",
-          }}
-        >
+        <AppBar position="static" sx={{ bgcolor: "primary.main" }}>
           <Toolbar>
             <Typography
               sx={{
                 flexGrow: 1,
-                color: "#7ED957",
+                color: "secondary.main",
                 fontFamily: '"Roboto", sans-serif',
                 fontWeight: 500,
-                alignItems: "left",
               }}
             >
               WELCOME!
             </Typography>
 
-            <IconButton sx={{ color: "#7ED957" }} onClick={() => setOpen(true)}>
+            <IconButton
+              sx={{ color: "secondary.main" }}
+              onClick={() => setOpen(true)}
+              aria-label="Open navigation menu"
+            >
               <MenuIcon />
             </IconButton>
           </Toolbar>
         </AppBar>
 
-        <Drawer anchor="right" open={open} onClose={() => setOpen(false)}>
+        <Drawer
+          anchor="right"
+          open={open}
+          onClose={() => setOpen(false)}
+        >
           <Box
             sx={{
               width: 250,
+              height: "100%",
               display: "flex",
               flexDirection: "column",
-              p: 2,
               gap: 2,
-              backgroundColor: "#8C52FF",
-              height: "100%",
+              p: 2,
+              bgcolor: "background.paper",
             }}
           >
-            {navItems.map((item) => (
-              <Button
-                key={item.path}
-                component={NavLink}
-                to={item.path}
-                end={item.path === "/"}
-                onClick={() => setOpen(false)}
-                sx={{
-                  color: "#7ED957",
-                  fontFamily: '"Roboto", sans-serif',
-                  fontWeight: 500,
-                  justifyContent: "flex-start",
-                  borderRadius: 1,
-
-                  "&.active": {
-                    backgroundColor: "#7ED957",
-                    color: "#8C52FF",
-
-                    "&:hover": {
-                      backgroundColor: "#7ED957",
-                    },
-                  },
-                }}
-              >
-                {item.label}
-              </Button>
-            ))}
-
-            <IconButton
-              component={NavLink}
-              to="/login"
-              onClick={() => setOpen(false)}
-              sx={{
-                alignSelf: "flex-start",
-                color: "#7ED957",
-
-                "&.active": {
-                  backgroundColor: "#7ED957",
-                  color: "#8C52FF",
-
-                  "&:hover": {
-                    backgroundColor: "#7ED957",
-                  },
-                },
-              }}
-            >
-              <AccountCircleIcon />
-            </IconButton>
+            {renderNavigationLinks(() => setOpen(false))}
           </Box>
         </Drawer>
       </>
@@ -124,17 +146,12 @@ export default function Navbar() {
   }
 
   return (
-    <AppBar
-      position="static"
-      sx={{
-        backgroundColor: "#8C52FF",
-      }}
-    >
+    <AppBar position="static" sx={{ bgcolor: "primary.main" }}>
       <Toolbar>
         <Typography
           sx={{
             flexGrow: 1,
-            color: "#7ED957",
+            color: "secondary.main",
             fontFamily: '"Roboto", sans-serif',
             fontWeight: 500,
           }}
@@ -142,46 +159,7 @@ export default function Navbar() {
           WELCOME!
         </Typography>
 
-        {navItems.map((item) => (
-          <Button
-            key={item.path}
-            component={NavLink}
-            to={item.path}
-            end={item.path === "/"}
-            sx={{
-              color: "#7ED957",
-              fontFamily: '"Roboto", sans-serif',
-              fontWeight: 500,
-              borderRadius: 1,
-              px: 2,
-
-              "&.active": {
-                backgroundColor: "#7ED957",
-                color: "#8C52FF",
-
-                "&:hover": {
-                  backgroundColor: "#7ED957",
-                },
-              },
-            }}
-          >
-            {item.label}
-          </Button>
-        ))}
-        <IconButton
-          component={NavLink}
-          to="/login"
-          sx={{
-            color: "#7ED957",
-
-            "&.active": {
-              backgroundColor: "#7ED957",
-              color: "#8C52FF",
-            },
-          }}
-        >
-          <AccountCircleIcon />
-        </IconButton>
+        {renderNavigationLinks()}
       </Toolbar>
     </AppBar>
   );
